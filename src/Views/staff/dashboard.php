@@ -487,7 +487,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">Less: <?= (int)$sum['sugar_less'] ?></span>
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">Extra: <?= (int)($sum['sugar_extra'] ?? 0) ?></span>
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">No Sugar: <?= (int)$sum['sugar_none'] ?></span>
-                <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-tea-50 text-tea-700 font-bold shrink-0">Pending: <?= (int)$sum['pending'] ?> | Done: <?= (int)$sum['delivered'] ?></span>
+                <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-tea-50 text-tea-700 font-bold shrink-0">Pending: <?= (int)$sum['pending'] ?> | Done: <?= (int)$sum['delivered'] ?> | Skip: <?= (int)($sum['skipped'] ?? 0) ?></span>
             </div>
         </div>
 
@@ -510,16 +510,119 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
     <?php if (empty($rooms)): ?>
         <div class="card p-8 text-center text-sm text-slate-500">No orders scheduled for this session<?= $hasFilters ? ' matching your filter' : '' ?>.</div>
     <?php else: ?>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
-            <?php foreach ($rooms as $room):
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+            <?php foreach ($rooms as $roomIndex => $room):
                 $unfinished = array_values(array_filter($room['orders'], fn($o) => $o['id'] !== null && in_array($o['status'], ['pending', 'accepted', 'preparing', 'almost_done'], true)));
+                $rSum = $room['summary'] ?? [];
+                $rTotalCups = (int)($rSum['total_cups'] ?? 0);
+                $rTea = (int)($rSum['tea'] ?? 0);
+                $rCoffee = (int)($rSum['coffee'] ?? 0);
+                $rSkip = (int)($rSum['skipped_count'] ?? 0);
+                $rSugNormal = (int)($rSum['sugar_normal'] ?? 0);
+                $rSugLess = (int)($rSum['sugar_less'] ?? 0);
+                $rSugExtra = (int)($rSum['sugar_extra'] ?? 0);
+                $rSugNone = (int)($rSum['sugar_none'] ?? 0);
+                $rPending = (int)($rSum['pending'] ?? 0);
+                $rDelivered = (int)($rSum['delivered'] ?? 0);
+                $rOrdersCount = count($room['orders']);
+                $rSkippedUsers = $room['skipped_users'] ?? [];
+                $rDetailCount = $rOrdersCount + count($rSkippedUsers);
+                $roomModalKey = $tab . '-' . (int)$room['room_id'] . '-' . $roomIndex;
+
+                if (!$sData['is_finalized']) {
+                    $roomBadgeText = $rOrdersCount > 0 ? 'Est.' : 'All Skipped';
+                    $roomBadgeClass = $rOrdersCount > 0 ? 'bg-stone-100 text-slate-600' : 'bg-rose-50 text-rose-700 border border-rose-200';
+                } elseif (count($unfinished) > 0) {
+                    $roomBadgeText = count($unfinished) . ' Pending';
+                    $roomBadgeClass = 'bg-amberwarm-100 text-amberwarm-700';
+                } elseif ($rDelivered > 0) {
+                    $roomBadgeText = 'All Done';
+                    $roomBadgeClass = 'bg-emerald-100 text-emerald-700';
+                } elseif ($rSkip > 0 && $rOrdersCount === 0) {
+                    $roomBadgeText = 'All Skipped';
+                    $roomBadgeClass = 'bg-rose-50 text-rose-700 border border-rose-200';
+                } else {
+                    $roomBadgeText = 'Closed';
+                    $roomBadgeClass = 'bg-stone-100 text-slate-600';
+                }
             ?>
-            <div class="card p-4 space-y-3 min-w-0">
-                <div class="flex items-center justify-between gap-2 pb-2 border-b border-stone-100">
-                    <h3 class="flex-1 min-w-0 font-bold text-sm text-tea-800 inline-flex items-center gap-1.5">
-                        <i class="ti ti-door text-base shrink-0"></i>
-                        <span class="truncate"><?= e($room['room_name']) ?> (<?= count($room['orders']) ?>)</span>
-                    </h3>
+            <div class="card p-4 flex flex-col justify-between gap-3.5 h-full min-w-0 staff-room-card">
+                <div class="space-y-3">
+                    <!-- Room Header -->
+                    <div class="flex items-start justify-between gap-2 pb-2.5 border-b border-stone-100">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-extrabold text-sm text-tea-800 flex items-center gap-1.5 min-w-0">
+                                <i class="ti ti-door text-base shrink-0"></i>
+                                <span class="truncate"><?= e($room['room_name']) ?></span>
+                            </h3>
+                            <div class="text-[11px] font-medium text-slate-500 mt-0.5 truncate">
+                                <?= $rOrdersCount ?> active <?= $rOrdersCount === 1 ? 'order' : 'orders' ?>
+                                <?php if ($rDelivered > 0): ?>
+                                    &bull; <?= $rDelivered ?> delivered
+                                <?php endif; ?>
+                                <?php if ($rSkip > 0): ?>
+                                    &bull; <?= $rSkip ?> skipped
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 inline-flex items-center gap-1 <?= $roomBadgeClass ?>">
+                            <?php if ($roomBadgeText === 'All Done'): ?><i class="ti ti-check"></i><?php endif; ?>
+                            <?= e($roomBadgeText) ?>
+                        </span>
+                    </div>
+
+                    <!-- Primary Counts: Total Cups, Tea, Coffee, Skip -->
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="rounded-xl bg-stone-50 border border-stone-200 px-1.5 py-2">
+                            <div class="text-lg font-extrabold text-slate-800 leading-tight"><?= $rTotalCups ?></div>
+                            <div class="text-[10px] font-bold text-slate-500 mt-0.5">Total Cups</div>
+                        </div>
+                        <div class="rounded-xl bg-tea-50 border border-tea-200 px-1.5 py-2">
+                            <div class="text-lg font-extrabold text-tea-800 leading-tight"><?= $rTea ?></div>
+                            <div class="text-[10px] font-bold text-tea-700 mt-0.5">Tea</div>
+                        </div>
+                        <div class="rounded-xl bg-amberwarm-50 border border-amberwarm-400/40 px-1.5 py-2">
+                            <div class="text-lg font-extrabold text-amberwarm-600 leading-tight"><?= $rCoffee ?></div>
+                            <div class="text-[10px] font-bold text-amberwarm-600 mt-0.5">Coffee</div>
+                        </div>
+                        <div class="rounded-xl bg-rose-50 border border-rose-200 px-1.5 py-2">
+                            <div class="text-lg font-extrabold text-rose-700 leading-tight"><?= $rSkip ?></div>
+                            <div class="text-[10px] font-bold text-rose-600 mt-0.5">Skip</div>
+                        </div>
+                    </div>
+
+                    <!-- Uniform Sugar Breakdown Strip -->
+                    <div class="grid grid-cols-4 gap-1.5 text-center rounded-xl bg-stone-50 border border-stone-200 px-2 py-1.5">
+                        <div>
+                            <div class="text-[10px] font-medium text-slate-500">Normal</div>
+                            <div class="text-xs font-extrabold text-slate-800"><?= $rSugNormal ?></div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-medium text-slate-500">Less</div>
+                            <div class="text-xs font-extrabold text-slate-800"><?= $rSugLess ?></div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-medium text-slate-500">Extra</div>
+                            <div class="text-xs font-extrabold text-slate-800"><?= $rSugExtra ?></div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-medium text-slate-500">No Sugar</div>
+                            <div class="text-xs font-extrabold text-slate-800"><?= $rSugNone ?></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Footer Actions -->
+                <div class="flex items-center gap-2 pt-2.5 border-t border-stone-100">
+                    <button
+                        type="button"
+                        data-room-modal-open="<?= e($roomModalKey) ?>"
+                        data-room-title="<?= e($room['room_name']) ?>"
+                        class="btn-outline flex-1 text-xs font-bold py-2 px-3 min-h-[40px]">
+                        <i class="ti ti-list-details text-sm"></i>
+                        <span>View Details (<?= $rDetailCount ?>)</span>
+                    </button>
+
                     <?php if ($sData['is_finalized'] && count($unfinished) > 0): ?>
                         <form method="post" action="/staff/deliver-room" data-ajax-action="1" onsubmit="return confirm('Mark <?= count($unfinished) ?> order(s) in <?= e($room['room_name']) ?> as delivered?');" class="shrink-0">
                             <?= Session::csrfField() ?>
@@ -530,59 +633,153 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                             <?php foreach ($unfinished as $uo): ?>
                                 <input type="hidden" name="order_ids[]" value="<?= (int)$uo['id'] ?>">
                             <?php endforeach; ?>
-                            <button type="submit" style="padding: 0.375rem 0.625rem;" class="rounded-lg bg-tea-600 text-white text-xs font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                                <i class="ti ti-circle-check"></i><?php if ((int)$room['room_id'] === 0): ?>Deliver All (<?= count($unfinished) ?>)<?php else: ?>Deliver <span class="hidden sm:inline">Room </span>(<?= count($unfinished) ?>)<?php endif; ?>
+                            <button type="submit" style="padding: 0.5rem 0.75rem;" class="rounded-xl bg-tea-600 text-white text-xs font-bold inline-flex items-center gap-1 whitespace-nowrap min-h-[40px] hover:bg-tea-700">
+                                <i class="ti ti-circle-check text-sm"></i>
+                                <span><?= (int)$room['room_id'] === 0 ? 'Deliver All' : 'Deliver Room' ?> (<?= count($unfinished) ?>)</span>
                             </button>
                         </form>
                     <?php endif; ?>
                 </div>
 
-                <div class="divide-y divide-stone-100">
-                    <?php foreach ($room['orders'] as $o):
-                        $cupUrl = cup_image_url($o['cup_image_snapshot'] ?? null, (int)$o['user_id']);
-                        $drinkSummary = (int)$o['quantity'] . 'x ' . badge_beverage($o['beverage']) . ' • ' . badge_sugar($o['sugar']) . (!empty($o['note']) ? ' ("' . $o['note'] . '")' : '');
-                    ?>
-                        <div class="py-2.5 flex items-center justify-between gap-2.5">
-                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                                <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)$room['room_name'], $drinkSummary); ?>
-                                <div class="min-w-0 flex-1">
-                                    <div class="font-bold text-sm text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></div>
-                                    <div class="hidden md:block text-[11px] text-slate-400 truncate"><?= e($o['department_name_snapshot'] ?? '') ?></div>
-                                    <div class="text-xs font-semibold text-tea-700 flex items-center gap-1 flex-wrap">
-                                        <i class="ti <?= $o['beverage'] === 'coffee' ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700' ?> shrink-0"></i>
-                                        <span><?= (int)$o['quantity'] ?>&times; <?= e(badge_beverage($o['beverage'])) ?> &bull; <?= e(badge_sugar($o['sugar'])) ?></span>
-                                    </div>
-                                    <?php if (!empty($o['note'])): ?>
-                                        <div class="text-[11px] text-slate-500 break-words">"<?= e($o['note']) ?>"</div>
-                                    <?php endif; ?>
-                                </div>
+                <!-- Hidden Full-View Room Modal Source Content -->
+                <div id="room-modal-src-<?= e($roomModalKey) ?>" class="hidden" aria-hidden="true">
+                    <div class="space-y-4">
+                        <!-- Modal Summary Strip -->
+                        <div class="grid grid-cols-4 gap-2 text-center">
+                            <div class="rounded-xl bg-stone-50 border border-stone-200 p-2">
+                                <div class="text-base font-extrabold text-slate-800"><?= $rTotalCups ?></div>
+                                <div class="text-[10px] font-bold text-slate-500">Total Cups</div>
                             </div>
-
-                            <div class="shrink-0">
-                                <?php if ($o['id'] === null): ?>
-                                    <span class="px-2 py-1 rounded-lg bg-stone-100 text-stone-500 text-[11px] font-semibold">Est.</span>
-                                <?php elseif ($o['status'] === 'delivered'): ?>
-                                    <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold inline-flex items-center gap-1">
-                                        <i class="ti ti-check"></i>Done
-                                    </span>
-                                <?php elseif ($o['status'] === 'system_cancelled'): ?>
-                                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold whitespace-nowrap">Auto Cancel</span>
-                                <?php elseif ($o['status'] === 'cancelled'): ?>
-                                    <span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-xs font-bold">Cancelled</span>
-                                <?php else: ?>
-                                    <form method="post" action="/staff/status" data-ajax-action="1">
-                                        <?= Session::csrfField() ?>
-                                        <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                                        <input type="hidden" name="status" value="delivered">
-                                        <input type="hidden" name="tab" value="<?= e($tab) ?>">
-                                        <input type="hidden" name="filter_room_id" value="<?= e((string)$filterRoomId) ?>">
-                                        <input type="hidden" name="filter_dept_id" value="<?= e((string)$filterDeptId) ?>">
-                                        <button type="submit" class="btn-primary text-xs py-2 px-3 min-h-[40px]">Deliver</button>
-                                    </form>
-                                <?php endif; ?>
+                            <div class="rounded-xl bg-tea-50 border border-tea-200 p-2">
+                                <div class="text-base font-extrabold text-tea-800"><?= $rTea ?></div>
+                                <div class="text-[10px] font-bold text-tea-700">Tea</div>
+                            </div>
+                            <div class="rounded-xl bg-amberwarm-50 border border-amberwarm-400/40 p-2">
+                                <div class="text-base font-extrabold text-amberwarm-600"><?= $rCoffee ?></div>
+                                <div class="text-[10px] font-bold text-amberwarm-600">Coffee</div>
+                            </div>
+                            <div class="rounded-xl bg-rose-50 border border-rose-200 p-2">
+                                <div class="text-base font-extrabold text-rose-700"><?= $rSkip ?></div>
+                                <div class="text-[10px] font-bold text-rose-600">Skip</div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+
+                        <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+                            <span class="px-2 py-1 rounded-lg bg-stone-50 border border-stone-200">Normal: <?= $rSugNormal ?></span>
+                            <span class="px-2 py-1 rounded-lg bg-stone-50 border border-stone-200">Less: <?= $rSugLess ?></span>
+                            <span class="px-2 py-1 rounded-lg bg-stone-50 border border-stone-200">Extra: <?= $rSugExtra ?></span>
+                            <span class="px-2 py-1 rounded-lg bg-stone-50 border border-stone-200">No Sugar: <?= $rSugNone ?></span>
+                            <span class="px-2 py-1 rounded-lg bg-tea-50 text-tea-700 font-bold">Pending: <?= $rPending ?> | Done: <?= $rDelivered ?></span>
+                        </div>
+
+                        <?php if ($sData['is_finalized'] && count($unfinished) > 0): ?>
+                            <form method="post" action="/staff/deliver-room" data-ajax-action="1" onsubmit="return confirm('Mark <?= count($unfinished) ?> order(s) in <?= e($room['room_name']) ?> as delivered?');">
+                                <?= Session::csrfField() ?>
+                                <input type="hidden" name="room_id" value="<?= (int)$room['room_id'] ?>">
+                                <input type="hidden" name="slot_key" value="<?= e($tab) ?>">
+                                <input type="hidden" name="filter_room_id" value="<?= e((string)$filterRoomId) ?>">
+                                <input type="hidden" name="filter_dept_id" value="<?= e((string)$filterDeptId) ?>">
+                                <?php foreach ($unfinished as $uo): ?>
+                                    <input type="hidden" name="order_ids[]" value="<?= (int)$uo['id'] ?>">
+                                <?php endforeach; ?>
+                                <button type="submit" class="btn-primary w-full text-xs font-bold py-2.5">
+                                    <i class="ti ti-circle-check text-base"></i>
+                                    <span><?= (int)$room['room_id'] === 0 ? 'Deliver All Unassigned' : 'Deliver Entire Room' ?> (<?= count($unfinished) ?>)</span>
+                                </button>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if (!empty($room['orders'])): ?>
+                            <div class="space-y-2">
+                                <div class="text-xs font-bold uppercase tracking-wide text-slate-500">Employees &amp; Orders (<?= $rOrdersCount ?>)</div>
+                                <div class="divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white px-3">
+                                    <?php foreach ($room['orders'] as $o):
+                                        $cupUrl = cup_image_url($o['cup_image_snapshot'] ?? null, (int)$o['user_id']);
+                                        $drinkSummary = (int)$o['quantity'] . 'x ' . badge_beverage($o['beverage']) . ' • ' . badge_sugar($o['sugar']) . (!empty($o['note']) ? ' ("' . $o['note'] . '")' : '');
+                                    ?>
+                                        <div class="py-2.5 flex items-center justify-between gap-2.5">
+                                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)$room['room_name'], $drinkSummary); ?>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="font-bold text-sm text-slate-800 truncate">
+                                                        <?= e($o['employee_name_snapshot']) ?>
+                                                        <?php if (!empty($o['employee_id_snapshot'])): ?>
+                                                            <span class="text-[11px] font-semibold text-slate-400">(<?= e($o['employee_id_snapshot']) ?>)</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <?php if (!empty($o['department_name_snapshot'])): ?>
+                                                        <div class="text-[11px] text-slate-400 truncate"><?= e($o['department_name_snapshot']) ?></div>
+                                                    <?php endif; ?>
+                                                    <div class="text-xs font-semibold text-tea-700 flex items-center gap-1 flex-wrap mt-0.5">
+                                                        <i class="ti <?= $o['beverage'] === 'coffee' ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700' ?> shrink-0"></i>
+                                                        <span><?= (int)$o['quantity'] ?>&times; <?= e(badge_beverage($o['beverage'])) ?> &bull; <?= e(badge_sugar($o['sugar'])) ?></span>
+                                                    </div>
+                                                    <?php if (!empty($o['note'])): ?>
+                                                        <div class="text-[11px] text-slate-500 break-words">"<?= e($o['note']) ?>"</div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+
+                                            <div class="shrink-0">
+                                                <?php if ($o['id'] === null): ?>
+                                                    <span class="px-2 py-1 rounded-lg bg-stone-100 text-stone-500 text-[11px] font-semibold">Est.</span>
+                                                <?php elseif ($o['status'] === 'delivered'): ?>
+                                                    <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold inline-flex items-center gap-1">
+                                                        <i class="ti ti-check"></i>Done
+                                                    </span>
+                                                <?php elseif ($o['status'] === 'system_cancelled'): ?>
+                                                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold whitespace-nowrap">Auto Cancel</span>
+                                                <?php elseif ($o['status'] === 'cancelled'): ?>
+                                                    <span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-xs font-bold">Cancelled</span>
+                                                <?php else: ?>
+                                                    <form method="post" action="/staff/status" data-ajax-action="1">
+                                                        <?= Session::csrfField() ?>
+                                                        <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                                                        <input type="hidden" name="status" value="delivered">
+                                                        <input type="hidden" name="tab" value="<?= e($tab) ?>">
+                                                        <input type="hidden" name="filter_room_id" value="<?= e((string)$filterRoomId) ?>">
+                                                        <input type="hidden" name="filter_dept_id" value="<?= e((string)$filterDeptId) ?>">
+                                                        <button type="submit" class="btn-primary text-xs py-2 px-3 min-h-[40px]">Deliver</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($rSkippedUsers)): ?>
+                            <div class="space-y-2">
+                                <div class="text-xs font-bold uppercase tracking-wide text-rose-600 flex items-center gap-1">
+                                    <i class="ti ti-ban"></i>
+                                    <span>Skipped in This Room (<?= count($rSkippedUsers) ?>)</span>
+                                </div>
+                                <div class="divide-y divide-rose-100 rounded-xl border border-rose-200 bg-rose-50 px-3">
+                                    <?php foreach ($rSkippedUsers as $rsk):
+                                        $rskReason = match ($rsk['reason'] ?? '') {
+                                            'paused'           => 'Paused / Away',
+                                            'skipped_today'    => 'Skipped Today',
+                                            'disabled_default' => 'Disabled in Defaults',
+                                            default            => 'Skipped',
+                                        };
+                                        $rskCupUrl = cup_image_url($rsk['cup_image'] ?? null, (int)$rsk['user_id']);
+                                    ?>
+                                        <div class="py-2 flex items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <?php $renderCupThumb($rskCupUrl, (string)$rsk['full_name'], (string)($rsk['employee_id'] ?? ''), (string)($rsk['department_name'] ?? ''), (string)($rsk['room_name'] ?? ''), 'Skipped (' . $rskReason . ')'); ?>
+                                                <div class="min-w-0">
+                                                    <div class="font-bold text-xs text-slate-800 truncate"><?= e($rsk['full_name']) ?></div>
+                                                    <div class="text-[11px] text-slate-500 truncate"><?= e($rsk['department_name'] ?? '') ?></div>
+                                                </div>
+                                            </div>
+                                            <span class="px-2 py-0.5 rounded-lg bg-white border border-rose-200 text-rose-700 text-[11px] font-bold shrink-0"><?= e($rskReason) ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -641,4 +838,57 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
         <?php endif; ?>
     </section>
 <?php endif; ?>
+</div>
+
+<!-- Room Full-View Popup Modal (outside #staff-live-panel so polling preserves open modal) -->
+<style>
+#staff-room-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(15, 23, 42, 0.72);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+}
+#staff-room-modal.hidden {
+    display: none;
+}
+.staff-room-modal-dialog {
+    background: #fff;
+    border: 1px solid #e7e5e4;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 42rem;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.staff-room-modal-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+</style>
+<div id="staff-room-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="staff-room-modal-title">
+    <div class="staff-room-modal-dialog">
+        <div class="px-4 py-3 border-b border-stone-100 flex items-center justify-between gap-2 bg-cream-50 shrink-0">
+            <div class="inline-flex items-center gap-2 min-w-0">
+                <i class="ti ti-door text-lg text-tea-700 shrink-0"></i>
+                <h3 id="staff-room-modal-title" class="font-extrabold text-base text-tea-800 truncate">Room Details</h3>
+            </div>
+            <button type="button" data-room-modal-close="1" class="w-9 h-9 rounded-xl bg-white border border-stone-200 text-slate-600 hover:bg-stone-100 flex items-center justify-center shrink-0" aria-label="Close room details">
+                <i class="ti ti-x text-lg"></i>
+            </button>
+        </div>
+        <div id="staff-room-modal-body" class="p-4 staff-room-modal-body"></div>
+        <div class="px-4 py-3 border-t border-stone-100 bg-stone-50 shrink-0">
+            <button type="button" data-room-modal-close="1" class="btn-outline w-full text-xs font-bold py-2.5">Close</button>
+        </div>
+    </div>
 </div>

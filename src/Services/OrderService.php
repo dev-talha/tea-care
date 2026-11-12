@@ -905,6 +905,7 @@ class OrderService
                     'employee_id'     => $row['employee_id'],
                     'full_name'       => $row['full_name'],
                     'department_name' => $row['department_name'] ?? 'Unassigned',
+                    'room_id'         => (int)($row['room_id'] ?? 0),
                     'room_name'       => $row['room_name'] ?? 'Unassigned',
                     'cup_image'       => $row['cup_image'],
                     'session'         => 'all',
@@ -923,6 +924,7 @@ class OrderService
                         'employee_id'     => $row['employee_id'],
                         'full_name'       => $row['full_name'],
                         'department_name' => $row['department_name'] ?? 'Unassigned',
+                        'room_id'         => (int)($row['room_id'] ?? 0),
                         'room_name'       => $row['room_name'] ?? 'Unassigned',
                         'cup_image'       => $row['cup_image'],
                         'session'         => $slotKey,
@@ -934,6 +936,7 @@ class OrderService
                         'employee_id'     => $row['employee_id'],
                         'full_name'       => $row['full_name'],
                         'department_name' => $row['department_name'] ?? 'Unassigned',
+                        'room_id'         => (int)($row['room_id'] ?? 0),
                         'room_name'       => $row['room_name'] ?? 'Unassigned',
                         'cup_image'       => $row['cup_image'],
                         'session'         => $slotKey,
@@ -968,7 +971,7 @@ class OrderService
         return (int)($row['cnt'] ?? 0);
     }
 
-    public static function getSlotDataForStaff(string $date, string $slotKey, ?int $roomId = null, ?int $deptId = null): array
+    public static function getSlotDataForStaff(string $date, string $slotKey, ?int $roomId = null, ?int $deptId = null, ?array $preloadedSkipped = null): array
     {
         $slot = ScheduleService::getSlot($slotKey);
         $dayStatus = ScheduleService::getDayStatus($date);
@@ -1001,6 +1004,12 @@ class OrderService
             [$date, $slotKey]
         )['cnt'] ?? 0);
 
+        $skippedSource = $preloadedSkipped ?? self::getSkippedListForStaff($date, $roomId, $deptId);
+        $slotSkipped = array_values(array_filter(
+            $skippedSource,
+            static fn(array $sk): bool => ($sk['session'] ?? '') === 'all' || ($sk['session'] ?? '') === $slotKey
+        ));
+
         $summary = [
             'tea'          => 0,
             'coffee'       => 0,
@@ -1010,39 +1019,69 @@ class OrderService
             'sugar_none'   => 0,
             'pending'      => 0,
             'delivered'    => 0,
+            'skipped'      => count($slotSkipped),
         ];
 
         $rooms = [];
+        $ensureRoom = static function (int $rid, string $rName) use (&$rooms): string {
+            $cleanName = $rName !== '' ? $rName : 'Unassigned';
+            $roomKey = ($rid > 0 ? (string)$rid : '0') . '|' . $cleanName;
+            if (!isset($rooms[$roomKey])) {
+                $rooms[$roomKey] = [
+                    'room_id'       => $rid,
+                    'room_name'     => $cleanName,
+                    'summary'       => [
+                        'total_cups'    => 0,
+                        'tea'           => 0,
+                        'coffee'        => 0,
+                        'sugar_normal'  => 0,
+                        'sugar_less'    => 0,
+                        'sugar_extra'   => 0,
+                        'sugar_none'    => 0,
+                        'pending'       => 0,
+                        'delivered'     => 0,
+                        'cancelled'     => 0,
+                        'skipped_count' => 0,
+                    ],
+                    'orders'        => [],
+                    'skipped_users' => [],
+                ];
+            }
+            return $roomKey;
+        };
+
+        $addOrderToRoom = static function (string $roomKey, string $bev, string $sug, int $qty, string $status, bool $isCancelled) use (&$rooms, &$summary): void {
+            if (!$isCancelled) {
+                $bevCol = $bev === 'coffee' ? 'coffee' : 'tea';
+                $sugCol = 'sugar_' . ($sug !== '' ? $sug : 'normal');
+                $summary[$bevCol] += $qty;
+                $summary[$sugCol] = ($summary[$sugCol] ?? 0) + $qty;
+                $rooms[$roomKey]['summary']['total_cups'] += $qty;
+                $rooms[$roomKey]['summary'][$bevCol] += $qty;
+                $rooms[$roomKey]['summary'][$sugCol] = ($rooms[$roomKey]['summary'][$sugCol] ?? 0) + $qty;
+            }
+            if ($status === 'delivered') {
+                $summary['delivered']++;
+                $rooms[$roomKey]['summary']['delivered']++;
+            } elseif ($isCancelled) {
+                $rooms[$roomKey]['summary']['cancelled']++;
+            } else {
+                $summary['pending']++;
+                $rooms[$roomKey]['summary']['pending']++;
+            }
+        };
+
+        $isActiveSessionWindow = $unfilteredCount > 0 || ($dayStatus['is_open'] && $slot && (int)$slot['is_active'] === 1 && !$cutoffPassed);
 
         if ($unfilteredCount > 0) {
             foreach ($finalizedOrders as $o) {
                 $qty = (int)$o['quantity'];
                 $isCancelled = in_array($o['status'], ['cancelled', 'system_cancelled'], true);
-                if (!$isCancelled) {
-                    if ($o['beverage'] === 'coffee') {
-                        $summary['coffee'] += $qty;
-                    } else {
-                        $summary['tea'] += $qty;
-                    }
-                    $summary['sugar_' . $o['sugar']] = ($summary['sugar_' . $o['sugar']] ?? 0) + $qty;
-                }
-                if ($o['status'] === 'delivered') {
-                    $summary['delivered']++;
-                } elseif (!$isCancelled) {
-                    $summary['pending']++;
-                }
-
-                $roomKey = ($o['room_id'] ? (string)$o['room_id'] : '0') . '|' . ($o['room_name_snapshot'] ?: 'Unassigned');
-                if (!isset($rooms[$roomKey])) {
-                    $rooms[$roomKey] = [
-                        'room_id'   => (int)($o['room_id'] ?? 0),
-                        'room_name' => $o['room_name_snapshot'] ?: 'Unassigned',
-                        'orders'    => [],
-                    ];
-                }
+                $roomKey = $ensureRoom((int)($o['room_id'] ?? 0), (string)($o['room_name_snapshot'] ?? ''));
+                $addOrderToRoom($roomKey, (string)$o['beverage'], (string)$o['sugar'], $qty, (string)$o['status'], $isCancelled);
                 $rooms[$roomKey]['orders'][] = $o;
             }
-        } elseif ($dayStatus['is_open'] && $slot && (int)$slot['is_active'] === 1 && !$cutoffPassed) {
+        } elseif ($isActiveSessionWindow) {
             $whereEst = ["u.status = 'active'", "u.is_paused = 0", "u.role IN ('employee', 'admin')"];
             $paramsEst = [$date, $slotKey, $slotKey];
             if ($roomId) {
@@ -1095,22 +1134,8 @@ class OrderService
                     continue;
                 }
 
-                if ($bev === 'coffee') {
-                    $summary['coffee'] += $qty;
-                } else {
-                    $summary['tea'] += $qty;
-                }
-                $summary['sugar_' . $sug] = ($summary['sugar_' . $sug] ?? 0) + $qty;
-                $summary['pending']++;
-
-                $roomKey = ($c['room_id'] ? (string)$c['room_id'] : '0') . '|' . ($c['room_name'] ?: 'Unassigned');
-                if (!isset($rooms[$roomKey])) {
-                    $rooms[$roomKey] = [
-                        'room_id'   => (int)($c['room_id'] ?? 0),
-                        'room_name' => $c['room_name'] ?: 'Unassigned',
-                        'orders'    => [],
-                    ];
-                }
+                $roomKey = $ensureRoom((int)($c['room_id'] ?? 0), (string)($c['room_name'] ?? ''));
+                $addOrderToRoom($roomKey, (string)$bev, (string)$sug, $qty, 'estimated', false);
                 $rooms[$roomKey]['orders'][] = [
                     'id'                       => null,
                     'user_id'                  => $c['user_id'],
@@ -1127,6 +1152,26 @@ class OrderService
                     'status'                   => 'estimated',
                 ];
             }
+        }
+
+        if ($isActiveSessionWindow && !empty($slotSkipped)) {
+            foreach ($slotSkipped as $sk) {
+                $roomKey = $ensureRoom((int)($sk['room_id'] ?? 0), (string)($sk['room_name'] ?? ''));
+                $rooms[$roomKey]['skipped_users'][] = $sk;
+                $rooms[$roomKey]['summary']['skipped_count']++;
+            }
+        }
+
+        if (count($rooms) > 1) {
+            uasort($rooms, static function (array $a, array $b): int {
+                if ($a['room_name'] === 'Unassigned' && $b['room_name'] !== 'Unassigned') {
+                    return 1;
+                }
+                if ($b['room_name'] === 'Unassigned' && $a['room_name'] !== 'Unassigned') {
+                    return -1;
+                }
+                return strnatcasecmp($a['room_name'], $b['room_name']);
+            });
         }
 
         return [

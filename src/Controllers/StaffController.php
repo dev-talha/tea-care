@@ -92,8 +92,8 @@ class StaffController
             [$today]
         )['cnt'] ?? 0);
 
-        $morningData = OrderService::getSlotDataForStaff($today, 'morning', $filterRoomId, $filterDeptId);
-        $afternoonData = OrderService::getSlotDataForStaff($today, 'afternoon', $filterRoomId, $filterDeptId);
+        $morningData = OrderService::getSlotDataForStaff($today, 'morning', $filterRoomId, $filterDeptId, $allSkipped);
+        $afternoonData = OrderService::getSlotDataForStaff($today, 'afternoon', $filterRoomId, $filterDeptId, $allSkipped);
 
         $completedTotalCount = (int)(Database::fetchOne(
             "SELECT COUNT(*) AS cnt FROM orders o

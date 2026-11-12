@@ -341,70 +341,110 @@
     }
   });
 
-  // Personal Cup Lightbox Popup Modal
+  // Personal Cup Lightbox Popup Modal + Staff Room Details Modal
   const cupModal = document.getElementById('cup-photo-modal');
+  const roomModal = document.getElementById('staff-room-modal');
+  const syncBodyScrollLock = () => {
+    const cupOpen = cupModal && !cupModal.classList.contains('hidden');
+    const roomOpen = roomModal && !roomModal.classList.contains('hidden');
+    document.body.style.overflow = (cupOpen || roomOpen) ? 'hidden' : '';
+  };
   const closeCupModal = () => {
     if (!cupModal) return;
     cupModal.classList.add('hidden');
-    document.body.style.overflow = '';
+    syncBodyScrollLock();
+  };
+  const closeRoomModal = () => {
+    if (!roomModal) return;
+    roomModal.classList.add('hidden');
+    roomModal.removeAttribute('data-room-key');
+    syncBodyScrollLock();
   };
 
   document.addEventListener('click', (e) => {
-    if (!cupModal) return;
-    const trigger = e.target.closest('[data-cup-preview]');
-    if (trigger) {
+    const roomTrigger = roomModal ? e.target.closest('[data-room-modal-open]') : null;
+    if (roomTrigger) {
       e.preventDefault();
-      const imgEl = document.getElementById('cup-modal-img');
-      const nameEl = document.getElementById('cup-modal-name');
-      const empIdEl = document.getElementById('cup-modal-empid');
-      const locEl = document.getElementById('cup-modal-loc');
-      const drinkEl = document.getElementById('cup-modal-drink');
-
-      const src = trigger.getAttribute('data-cup-src') || '';
-      const name = trigger.getAttribute('data-cup-name') || 'Employee';
-      const empId = trigger.getAttribute('data-cup-empid') || '';
-      const dept = trigger.getAttribute('data-cup-dept') || '';
-      const room = trigger.getAttribute('data-cup-room') || '';
-      const drink = trigger.getAttribute('data-cup-drink') || '';
-
-      if (imgEl) imgEl.src = src;
-      if (nameEl) nameEl.textContent = name;
-      if (empIdEl) {
-        if (empId) {
-          empIdEl.textContent = empId;
-          empIdEl.classList.remove('hidden');
-        } else {
-          empIdEl.classList.add('hidden');
-        }
+      const key = roomTrigger.getAttribute('data-room-modal-open') || '';
+      const title = roomTrigger.getAttribute('data-room-title') || 'Room Details';
+      const srcEl = key ? document.getElementById('room-modal-src-' + key) : null;
+      const titleEl = document.getElementById('staff-room-modal-title');
+      const bodyEl = document.getElementById('staff-room-modal-body');
+      if (srcEl && bodyEl) {
+        if (titleEl) titleEl.textContent = title;
+        bodyEl.innerHTML = srcEl.innerHTML;
+        bodyEl.scrollTop = 0;
+        roomModal.setAttribute('data-room-key', key);
+        roomModal.classList.remove('hidden');
+        syncBodyScrollLock();
       }
-      if (locEl) {
-        const parts = [];
-        if (room) parts.push('Room: ' + room);
-        if (dept) parts.push('Dept: ' + dept);
-        locEl.textContent = parts.join('  •  ');
-      }
-      if (drinkEl) {
-        if (drink) {
-          drinkEl.textContent = drink;
-          drinkEl.classList.remove('hidden');
-        } else {
-          drinkEl.classList.add('hidden');
-        }
-      }
-
-      cupModal.classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
       return;
     }
 
-    if (e.target.closest('[data-cup-modal-close]') || e.target === cupModal) {
-      closeCupModal();
+    if (cupModal) {
+      const trigger = e.target.closest('[data-cup-preview]');
+      if (trigger) {
+        e.preventDefault();
+        const imgEl = document.getElementById('cup-modal-img');
+        const nameEl = document.getElementById('cup-modal-name');
+        const empIdEl = document.getElementById('cup-modal-empid');
+        const locEl = document.getElementById('cup-modal-loc');
+        const drinkEl = document.getElementById('cup-modal-drink');
+
+        const src = trigger.getAttribute('data-cup-src') || '';
+        const name = trigger.getAttribute('data-cup-name') || 'Employee';
+        const empId = trigger.getAttribute('data-cup-empid') || '';
+        const dept = trigger.getAttribute('data-cup-dept') || '';
+        const room = trigger.getAttribute('data-cup-room') || '';
+        const drink = trigger.getAttribute('data-cup-drink') || '';
+
+        if (imgEl) imgEl.src = src;
+        if (nameEl) nameEl.textContent = name;
+        if (empIdEl) {
+          if (empId) {
+            empIdEl.textContent = empId;
+            empIdEl.classList.remove('hidden');
+          } else {
+            empIdEl.classList.add('hidden');
+          }
+        }
+        if (locEl) {
+          const parts = [];
+          if (room) parts.push('Room: ' + room);
+          if (dept) parts.push('Dept: ' + dept);
+          locEl.textContent = parts.join('  •  ');
+        }
+        if (drinkEl) {
+          if (drink) {
+            drinkEl.textContent = drink;
+            drinkEl.classList.remove('hidden');
+          } else {
+            drinkEl.classList.add('hidden');
+          }
+        }
+
+        cupModal.classList.remove('hidden');
+        syncBodyScrollLock();
+        return;
+      }
+
+      if (e.target.closest('[data-cup-modal-close]') || e.target === cupModal) {
+        closeCupModal();
+        return;
+      }
+    }
+
+    if (roomModal && (e.target.closest('[data-room-modal-close]') || e.target === roomModal)) {
+      closeRoomModal();
     }
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && cupModal && !cupModal.classList.contains('hidden')) {
+    if (e.key !== 'Escape') return;
+    if (cupModal && !cupModal.classList.contains('hidden')) {
       closeCupModal();
+    } else if (roomModal && !roomModal.classList.contains('hidden')) {
+      closeRoomModal();
     }
   });
 
@@ -493,6 +533,19 @@
           const nxt = doc.getElementById(id);
           if (cur && nxt) cur.innerHTML = nxt.innerHTML;
         });
+
+        if (roomModal && !roomModal.classList.contains('hidden')) {
+          const openKey = roomModal.getAttribute('data-room-key') || '';
+          const freshSrc = openKey ? document.getElementById('room-modal-src-' + openKey) : null;
+          const modalBody = document.getElementById('staff-room-modal-body');
+          if (freshSrc && modalBody) {
+            const prevScroll = modalBody.scrollTop;
+            modalBody.innerHTML = freshSrc.innerHTML;
+            modalBody.scrollTop = prevScroll;
+          } else {
+            closeRoomModal();
+          }
+        }
       } else if (isEmployeeLive) {
         const curRoot = document.getElementById('employee-live-root');
         const nxtDocRoot = doc.getElementById('employee-live-root');

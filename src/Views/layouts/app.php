@@ -63,20 +63,8 @@ $navUrgentPending = isset($urgentPendingCount)
             <!-- Desktop Navigation (Hidden on mobile where bottom nav handles navigation) -->
             <nav class="hidden md:flex items-center gap-1 overflow-x-auto">
                 <?php if ($isStaffView): ?>
-                    <a href="/staff?tab=skipped" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= in_array(($activeTab ?? ''), ['home', 'skipped'], true) ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-ban text-sm"></i><span>Skip</span>
-                    </a>
-                    <a href="/staff?tab=morning" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-sun text-sm"></i><span>Morning</span>
-                    </a>
-                    <a href="/staff?tab=afternoon" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'afternoon' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-clock text-sm"></i><span>Afternoon</span>
-                    </a>
-                    <a href="/staff?tab=urgent" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'urgent' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-bolt text-sm"></i><span>Urgent</span>
-                    </a>
-                    <a href="/staff?tab=completed" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'completed' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-circle-check text-sm"></i><span>Complete</span>
+                    <a href="/staff" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') !== 'staff_settings' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
+                        <i class="ti ti-layout-dashboard text-sm"></i><span>Operations</span>
                     </a>
                     <a href="/staff/settings" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'staff_settings' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
                         <i class="ti ti-settings text-sm"></i><span>Settings</span>

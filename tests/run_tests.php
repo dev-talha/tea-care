@@ -329,6 +329,16 @@ assertTrue(($flexGuest['requested_within'] ?? '') === 'Before 15 min', 'Guest or
 assertTrue(OrderService::deliverRoomOrders(0, $testDate, 'afternoon', [(int)$aAfternoon['id']], $staff) === 0, 'Room batch delivery rejects invalid room_id <= 0');
 assertTrue(OrderService::getSkippedCountForStaff($testDate) === count(OrderService::getSkippedListForStaff($testDate, null, null)), 'Skipped count helper matches full skipped list count');
 
+// Verify per-room summary & skipped breakdown in getSlotDataForStaff
+$slotStats = OrderService::getSlotDataForStaff($testDate, 'afternoon');
+$firstRoom = $slotStats['rooms'][0] ?? null;
+assertTrue(
+    is_array($firstRoom) &&
+    isset($firstRoom['summary']['total_cups'], $firstRoom['summary']['tea'], $firstRoom['summary']['coffee'], $firstRoom['summary']['skipped_count']) &&
+    is_array($firstRoom['skipped_users']),
+    'Staff slot data includes per-room cup/tea/coffee/skip summary and skipped_users list'
+);
+
 // Cleanup test data
 Database::execute("DELETE FROM staff_announcements WHERE announce_date = ?", [$testDate]);
 Database::execute("DELETE FROM whatsapp_jobs WHERE order_id IN (SELECT id FROM orders WHERE order_date = ? OR user_id IN (?, ?, ?, ?, ?))", [$testDate, $empAId, $empBId, $empUnconfId, $empPausedId, $empOptOutId]);
