@@ -345,7 +345,7 @@ class StaffController
         if ($userId <= 0) {
             Response::json(['ok' => false, 'error' => 'Invalid employee'], 400);
         }
-        $employee = OrderService::getEmployeeTodayOverviewForStaff($userId, ScheduleService::todayDate());
+        $employee = OrderService::getEmployeeTodayOverviewForStaff($userId, ScheduleService::today());
         if (!$employee) {
             Response::json(['ok' => false, 'error' => 'Employee not found'], 404);
         }

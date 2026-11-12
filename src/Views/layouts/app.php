@@ -223,9 +223,14 @@ $navUrgentPending = isset($urgentPendingCount)
             -webkit-backdrop-filter: blur(4px);
             backdrop-filter: blur(4px);
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             padding: 0.75rem;
+        }
+        @media (min-width: 768px) {
+            #staff-emp-search-modal {
+                padding: 3.5rem 1rem 1rem;
+            }
         }
         #staff-emp-search-modal.hidden {
             display: none;
@@ -237,10 +242,15 @@ $navUrgentPending = isset($urgentPendingCount)
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             width: 100%;
             max-width: 40rem;
-            max-height: 88vh;
+            max-height: calc(100vh - 1.5rem);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+        @media (min-width: 768px) {
+            .staff-emp-modal-dialog {
+                max-height: 82vh;
+            }
         }
         .staff-emp-modal-body {
             overflow-y: auto;
@@ -262,16 +272,16 @@ $navUrgentPending = isset($urgentPendingCount)
 
                 <div class="px-4 py-3 border-b border-stone-100 bg-white shrink-0">
                     <div class="relative flex items-center">
-                        <i class="ti ti-search text-slate-400 text-base absolute left-3 pointer-events-none"></i>
+                        <i class="ti ti-search text-slate-400 text-base" style="position: absolute; left: 0.875rem; pointer-events: none;"></i>
                         <input
-                            type="search"
+                            type="text"
                             id="staff-emp-search-input"
                             placeholder="Search by employee name or ID (e.g. Kamal, 7530)..."
                             autocomplete="off"
-                            style="padding-left: 2.35rem; padding-right: 2.35rem; font-size: 16px;"
+                            style="padding-left: 2.5rem; padding-right: 2.5rem; font-size: 16px;"
                             class="input-field w-full py-2.5 rounded-xl"
                         >
-                        <button type="button" id="staff-emp-search-clear" class="hidden absolute right-2.5 w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-stone-100 flex items-center justify-center" aria-label="Clear search">
+                        <button type="button" id="staff-emp-search-clear" style="position: absolute; right: 0.5rem;" class="hidden w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-stone-100 flex items-center justify-center" aria-label="Clear search">
                             <i class="ti ti-x text-sm"></i>
                         </button>
                     </div>
