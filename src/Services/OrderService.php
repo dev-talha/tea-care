@@ -266,6 +266,12 @@ class OrderService
 
     public static function finalizeRegularSlot(string $date, string $slotKey, ?DateTimeImmutable $now = null): int
     {
+        $skipRow = Database::fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'skip_finalize_slots'");
+        $skipSlots = array_filter(array_map('trim', explode(',', (string)($skipRow['setting_value'] ?? ''))));
+        if (in_array("{$date}:{$slotKey}", $skipSlots, true)) {
+            return 0;
+        }
+
         $now ??= ScheduleService::now();
         $slot = ScheduleService::getSlot($slotKey);
         if (!$slot || (int)$slot['is_active'] !== 1) {
