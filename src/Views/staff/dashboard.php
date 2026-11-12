@@ -366,6 +366,12 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                 <span class="inline-flex items-center gap-1 font-medium">
                                     <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
                                 </span>
+                                <?php if (!empty($o['accepted_by_name'])): ?>
+                                    <span class="text-slate-400">&bull;</span>
+                                    <span class="inline-flex items-center gap-1 font-semibold text-indigo-700">
+                                        <i class="ti ti-user text-xs"></i>Accepted: <?= e($o['accepted_by_name']) ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -428,8 +434,16 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                         <i class="ti ti-map-pin text-slate-400 shrink-0"></i>
                                         <strong class="truncate"><?= e($o['room_name_snapshot']) ?></strong> &bull; <span class="truncate"><?= e($o['department_name_snapshot']) ?></span>
                                     </div>
-                                    <div class="text-[11px] text-slate-400 inline-flex items-center gap-1">
-                                        <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                                        <span class="inline-flex items-center gap-1">
+                                            <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                        </span>
+                                        <?php if (!empty($o['accepted_by_name'])): ?>
+                                            <span>&bull;</span>
+                                            <span class="inline-flex items-center gap-1 font-semibold text-indigo-700">
+                                                <i class="ti ti-user text-xs"></i>Accepted: <?= e($o['accepted_by_name']) ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -606,8 +620,8 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                 <div class="text-xs text-slate-600 break-words">
                                     <?= e($drinkSummary) ?>
                                 </div>
-                                <div class="text-[11px] text-slate-400">
-                                    <?= e(strtoupper($o['order_type'])) ?> &bull; <?= e(date('g:i A', strtotime($o['updated_at']))) ?>
+                                <div class="text-[11px] text-slate-400 truncate">
+                                    <?= e(strtoupper($o['order_type'])) ?> &bull; <?= e(date('g:i A', strtotime($o['updated_at']))) ?><?php if (!empty($o['accepted_by_name'])): ?> &bull; <span class="font-semibold text-slate-600"><?= e($o['accepted_by_name']) ?></span><?php endif; ?>
                                 </div>
                             </div>
                         </div>

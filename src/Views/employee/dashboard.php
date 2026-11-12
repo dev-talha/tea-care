@@ -334,12 +334,12 @@ $announcements = $announcements ?? [];
                         <?php if ($reqStatus === 'almost_done'): ?>
                             <div class="rounded-xl bg-teal-50 border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 flex items-center gap-1.5">
                                 <i class="ti ti-hourglass-high text-sm shrink-0"></i>
-                                <span>Almost done! Ready in ~<?= $estMins > 0 ? $estMins : 5 ?> min</span>
+                                <span>Almost done<?= !empty($req['accepted_by_name']) ? ' (' . e($req['accepted_by_name']) . ')' : '' ?>! Ready in ~<?= $estMins > 0 ? $estMins : 5 ?> min</span>
                             </div>
                         <?php elseif (in_array($reqStatus, ['accepted', 'preparing'], true)): ?>
                             <div class="rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
                                 <i class="ti ti-flame text-sm shrink-0 animate-pulse"></i>
-                                <span>Tea Staff accepted and is preparing your order...</span>
+                                <span><strong><?= e(!empty($req['accepted_by_name']) ? $req['accepted_by_name'] : 'Tea Staff') ?></strong> accepted and is preparing your order...</span>
                             </div>
                         <?php elseif ($reqStatus === 'pending'): ?>
                             <div class="rounded-xl bg-amberwarm-50 border border-amberwarm-400/30 px-3 py-1.5 text-xs font-medium text-amberwarm-600 flex items-center gap-1.5">

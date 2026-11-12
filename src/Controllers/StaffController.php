@@ -62,8 +62,9 @@ class StaffController
         }
 
         $urgentOrders = Database::fetchAll(
-            "SELECT o.* FROM orders o
+            "SELECT o.*, ab.full_name AS accepted_by_name FROM orders o
              LEFT JOIN users u ON u.id = o.user_id
+             LEFT JOIN users ab ON ab.id = o.accepted_by
              WHERE o.order_date = ? AND o.order_type = 'on_demand' AND o.status IN ('pending', 'accepted', 'preparing', 'almost_done') {$whereExtra}
              ORDER BY FIELD(o.status, 'pending', 'accepted', 'preparing', 'almost_done'), o.created_at ASC",
             array_merge([$today], $extraParams)
@@ -71,8 +72,9 @@ class StaffController
         $urgentOrders = OrderService::getOrdersWithItems($urgentOrders);
 
         $guestOrders = Database::fetchAll(
-            "SELECT o.* FROM orders o
+            "SELECT o.*, ab.full_name AS accepted_by_name FROM orders o
              LEFT JOIN users u ON u.id = o.user_id
+             LEFT JOIN users ab ON ab.id = o.accepted_by
              WHERE o.order_date = ? AND o.order_type = 'guest' AND o.status IN ('pending', 'accepted', 'preparing', 'almost_done') {$whereExtra}
              ORDER BY FIELD(o.status, 'pending', 'accepted', 'preparing', 'almost_done'), o.created_at ASC",
             array_merge([$today], $extraParams)
@@ -102,8 +104,10 @@ class StaffController
         $completedOffset = ($completedPage - 1) * $perPage;
 
         $completedOrders = Database::fetchAll(
-            "SELECT o.* FROM orders o
+            "SELECT o.*, COALESCE(ab.full_name, db.full_name) AS accepted_by_name FROM orders o
              LEFT JOIN users u ON u.id = o.user_id
+             LEFT JOIN users ab ON ab.id = o.accepted_by
+             LEFT JOIN users db ON db.id = o.delivered_by
              WHERE o.order_date = ? AND o.status IN ('delivered', 'cancelled', 'system_cancelled') {$whereExtra}
              ORDER BY o.updated_at DESC
              LIMIT {$perPage} OFFSET {$completedOffset}",
@@ -299,7 +303,7 @@ class StaffController
                 SUM(CASE WHEN order_type IN ('on_demand', 'guest') AND status = 'pending' THEN 1 ELSE 0 END) AS urgent_pending_cnt,
                 MAX(updated_at) AS last_updated,
                 COUNT(*) AS total_cnt,
-                GROUP_CONCAT(CONCAT(id, ':', status, ':', COALESCE(estimated_minutes, 0)) ORDER BY id ASC) AS sig
+                GROUP_CONCAT(CONCAT(id, ':', status, ':', COALESCE(estimated_minutes, 0), ':', COALESCE(accepted_by, 0)) ORDER BY id ASC) AS sig
              FROM orders
              WHERE order_date = ?",
             [$today]

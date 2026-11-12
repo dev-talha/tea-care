@@ -30,9 +30,10 @@ class EmployeeController
         $afternoon = OrderService::getTodaySlotState($user, 'afternoon');
 
         $todayRequests = Database::fetchAll(
-            "SELECT * FROM orders
-             WHERE user_id = ? AND order_date = ? AND order_type IN ('on_demand', 'guest')
-             ORDER BY created_at DESC",
+            "SELECT o.*, ab.full_name AS accepted_by_name FROM orders o
+             LEFT JOIN users ab ON ab.id = o.accepted_by
+             WHERE o.user_id = ? AND o.order_date = ? AND o.order_type IN ('on_demand', 'guest')
+             ORDER BY o.created_at DESC",
             [$user['id'], $today]
         );
         $todayRequests = OrderService::getOrdersWithItems($todayRequests);
@@ -62,7 +63,7 @@ class EmployeeController
 
         $ordersSig = Database::fetchOne(
             "SELECT COUNT(*) AS cnt, MAX(updated_at) AS max_upd,
-                    GROUP_CONCAT(CONCAT(id, ':', status, ':', COALESCE(estimated_minutes, 0)) ORDER BY id ASC) AS sig
+                    GROUP_CONCAT(CONCAT(id, ':', status, ':', COALESCE(estimated_minutes, 0), ':', COALESCE(accepted_by, 0)) ORDER BY id ASC) AS sig
              FROM orders
              WHERE user_id = ? AND order_date = ?",
             [$user['id'], $today]
