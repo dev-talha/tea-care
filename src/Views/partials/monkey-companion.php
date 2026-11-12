@@ -8,6 +8,11 @@ $showMonkey = (int)($user['show_funny_monkey'] ?? 1) === 1
 ?>
 <?php if ($showMonkey): ?>
 <style>
+@media (max-width: 767px) {
+    #tc-monkey-dock {
+        padding-bottom: 5.5rem;
+    }
+}
 @media (min-width: 768px) {
     #tc-monkey-dock {
         display: flex;

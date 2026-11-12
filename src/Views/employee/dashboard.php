@@ -133,11 +133,7 @@ $announcements = $announcements ?? [];
                             <?php $status = $reqStatus; $estimatedMinutes = $estMins; require __DIR__ . '/../partials/status-badge.php'; ?>
                         </div>
                         <div class="text-sm font-semibold text-slate-800 flex flex-wrap items-center gap-1.5">
-                            <span>
-                                <?php foreach ($req['items'] as $idx => $it): ?>
-                                    <?= $idx > 0 ? ', ' : '' ?><?= (int)$it['quantity'] ?>&times; <?= e(badge_beverage($it['beverage'])) ?> (<?= e(badge_sugar($it['sugar'])) ?>)
-                                <?php endforeach; ?>
-                            </span>
+                            <span><?= implode(', ', array_map(fn($it) => (int)$it['quantity'] . '&times; ' . e(badge_beverage($it['beverage'])) . ' (' . e(badge_sugar($it['sugar'])) . ')', $req['items'])) ?></span>
                             <?php if (!empty($req['requested_within'])): ?>
                                 <span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
                                     <?= e($req['requested_within']) ?>
@@ -148,7 +144,7 @@ $announcements = $announcements ?? [];
                         <?php if ($reqStatus === 'almost_done'): ?>
                             <div class="rounded-xl bg-teal-50 border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 flex items-center gap-1.5">
                                 <i class="ti ti-hourglass-high text-sm shrink-0"></i>
-                                <span>Almost done<?= !empty($req['accepted_by_name']) ? ' (' . e($req['accepted_by_name']) . ')' : '' ?>! Ready in ~<?= $estMins > 0 ? $estMins : 5 ?> min</span>
+                                <span>Almost done<?= !empty($req['accepted_by_name']) ? ' &mdash; <strong>' . e($req['accepted_by_name']) . '</strong>' : '' ?>! Ready in ~<?= $estMins > 0 ? $estMins : 5 ?> min</span>
                             </div>
                         <?php elseif (in_array($reqStatus, ['accepted', 'preparing'], true)): ?>
                             <div class="rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
