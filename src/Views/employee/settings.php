@@ -185,6 +185,7 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
                     <div>
                         <label class="label-text" for="room_id"><?= e(__('room')) ?></label>
                         <select id="room_id" name="room_id" class="input-field" <?= $canEditDeptRoom ? '' : 'disabled' ?>>
+                            <option value="" <?= empty($user['room_id']) ? 'selected' : '' ?>>Unassigned / Select Room</option>
                             <?php foreach ($rooms as $r): ?>
                                 <option value="<?= (int)$r['id'] ?>" <?= (int)$user['room_id'] === (int)$r['id'] ? 'selected' : '' ?>><?= e($r['name']) ?></option>
                             <?php endforeach; ?>
