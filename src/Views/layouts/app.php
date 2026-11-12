@@ -165,6 +165,10 @@ $navUrgentPending = isset($urgentPendingCount)
         <?= $content ?>
     </main>
 
+    <div id="tc-monkey-dock" class="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <?php require __DIR__ . '/../partials/monkey-companion.php'; ?>
+    </div>
+
     <!-- Mobile Bottom Navigation (Hidden on Tablet/Desktop 24" Monitors) -->
     <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-tea-100 shadow-[0_-2px_10px_rgba(45,106,79,0.06)] z-40 pb-[env(safe-area-inset-bottom)]">
         <?php if ($isStaffView): ?>
@@ -218,7 +222,6 @@ $navUrgentPending = isset($urgentPendingCount)
     </nav>
 
     <?php require __DIR__ . '/../partials/cup-modal.php'; ?>
-    <?php require __DIR__ . '/../partials/monkey-companion.php'; ?>
     <script src="/assets/js/app.js?v=<?= @filemtime(__DIR__ . '/../../../public/assets/js/app.js') ?: '2' ?>"></script>
     <script src="/assets/js/monkey.js?v=<?= @filemtime(__DIR__ . '/../../../public/assets/js/monkey.js') ?: '1' ?>" defer></script>
 </body>

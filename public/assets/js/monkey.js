@@ -4,7 +4,7 @@
 
   const todayStr = pet.dataset.today || new Date().toISOString().slice(0, 10);
   const csrfToken = pet.dataset.csrf || '';
-  const POS_KEY = 'tc_monkey_pos_v1';
+  const getPosKey = () => (window.innerWidth >= 768 ? 'tc_monkey_pos_desktop_v1' : 'tc_monkey_pos_mobile_v1');
   const DISMISS_KEY = 'tc_monkey_dismissed_v1';
   const NEXT_VISIT_KEY = 'tc_monkey_next_visit_v1';
   const EPISODE_IDX_KEY = 'tc_monkey_ep_idx_v1';
@@ -280,6 +280,15 @@
   };
 
   // Position & Clamping
+  const resetDefaultPos = () => {
+    pet.classList.remove('tc-monkey-dragged');
+    pet.style.position = '';
+    pet.style.left = '';
+    pet.style.top = '';
+    pet.style.right = '';
+    pet.style.bottom = '';
+  };
+
   const applyClampedPos = (left, top) => {
     const w = pet.offsetWidth || 112;
     const h = pet.offsetHeight || 116;
@@ -288,6 +297,8 @@
     const clampedL = Math.min(Math.max(8, left), maxL);
     const clampedT = Math.min(Math.max(58, top), maxT);
 
+    pet.classList.add('tc-monkey-dragged');
+    pet.style.position = 'fixed';
     pet.style.left = clampedL + 'px';
     pet.style.top = clampedT + 'px';
     pet.style.right = 'auto';
@@ -296,16 +307,18 @@
 
   const restorePosition = () => {
     try {
-      const saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+      const saved = JSON.parse(localStorage.getItem(getPosKey()) || 'null');
       if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
         applyClampedPos(saved.left, saved.top);
+        return;
       }
     } catch (_) {}
+    resetDefaultPos();
   };
 
   window.addEventListener('resize', () => {
-    if (!pet.classList.contains('hidden') && pet.style.left && pet.style.top) {
-      applyClampedPos(parseFloat(pet.style.left), parseFloat(pet.style.top));
+    if (!pet.classList.contains('hidden')) {
+      restorePosition();
     }
   });
 
@@ -432,7 +445,7 @@
       try { dragEl.releasePointerCapture(e.pointerId); } catch (_) {}
       if (moved) {
         const rect = pet.getBoundingClientRect();
-        try { localStorage.setItem(POS_KEY, JSON.stringify({ left: rect.left, top: rect.top })); } catch (_) {}
+        try { localStorage.setItem(getPosKey(), JSON.stringify({ left: rect.left, top: rect.top })); } catch (_) {}
         if (wantsExitAfterDrag) {
           exitTimer = setTimeout(hideForCooldown, 2000);
         }

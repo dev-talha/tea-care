@@ -7,10 +7,26 @@ $showMonkey = (int)($user['show_funny_monkey'] ?? 1) === 1
     && (($user['monkey_dismissed_date'] ?? '') !== $monkeyToday);
 ?>
 <?php if ($showMonkey): ?>
+<style>
+@media (min-width: 768px) {
+    #tc-monkey-dock {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+    #tc-monkey-pet:not(.tc-monkey-dragged) {
+        position: static !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        top: auto !important;
+    }
+}
+</style>
 <div id="tc-monkey-pet"
      data-today="<?= e($monkeyToday) ?>"
      data-csrf="<?= e(Session::csrfToken()) ?>"
-     class="fixed bottom-20 right-3 md:bottom-5 md:right-5 z-40 select-none touch-none hidden"
+     class="fixed bottom-20 right-3 z-40 select-none touch-none hidden"
      style="width: 112px;"
      aria-label="TeaCare Funny Monkey Companion">
 
