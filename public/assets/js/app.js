@@ -362,10 +362,25 @@
     roomModal.removeAttribute('data-room-key');
     syncBodyScrollLock();
   };
+  let empCloseTimer = null;
+  const openEmpSearchModal = () => {
+    if (!empSearchModal) return;
+    clearTimeout(empCloseTimer);
+    empSearchModal.classList.remove('hidden');
+    void empSearchModal.offsetWidth;
+    empSearchModal.classList.add('is-open');
+    syncBodyScrollLock();
+  };
   const closeEmpSearchModal = () => {
     if (!empSearchModal) return;
-    empSearchModal.classList.add('hidden');
-    syncBodyScrollLock();
+    empSearchModal.classList.remove('is-open');
+    clearTimeout(empCloseTimer);
+    empCloseTimer = setTimeout(() => {
+      if (!empSearchModal.classList.contains('is-open')) {
+        empSearchModal.classList.add('hidden');
+        syncBodyScrollLock();
+      }
+    }, 200);
   };
 
   document.addEventListener('click', (e) => {
@@ -652,10 +667,9 @@
 
     empSearchBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      empSearchModal.classList.remove('hidden');
-      syncBodyScrollLock();
+      openEmpSearchModal();
       runEmpSearch(empSearchInput.value.trim());
-      window.setTimeout(() => empSearchInput.focus(), 40);
+      window.setTimeout(() => empSearchInput.focus(), 60);
     });
 
     empSearchInput.addEventListener('input', () => {

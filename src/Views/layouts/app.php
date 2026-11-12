@@ -226,6 +226,11 @@ $navUrgentPending = isset($urgentPendingCount)
             align-items: flex-start;
             justify-content: center;
             padding: 0.75rem;
+            opacity: 0;
+            transition: opacity 190ms ease;
+        }
+        #staff-emp-search-modal.is-open {
+            opacity: 1;
         }
         @media (min-width: 768px) {
             #staff-emp-search-modal {
@@ -246,6 +251,13 @@ $navUrgentPending = isset($urgentPendingCount)
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            opacity: 0;
+            transform: translateY(-10px) scale(0.985);
+            transition: opacity 210ms cubic-bezier(0.22, 1, 0.36, 1), transform 210ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #staff-emp-search-modal.is-open .staff-emp-modal-dialog {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
         @media (min-width: 768px) {
             .staff-emp-modal-dialog {

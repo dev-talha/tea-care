@@ -336,6 +336,18 @@
     stepTimers = [];
   };
 
+  const animateExit = (onDone) => {
+    const moved = pet.classList.contains('tc-monkey-dragged');
+    pet.style.transition = moved
+      ? 'opacity 320ms ease, transform 320ms ease'
+      : 'transform 420ms cubic-bezier(0.4, 0, 1, 1), opacity 320ms ease';
+    void pet.offsetWidth;
+    pet.style.opacity = '0';
+    pet.style.transform = moved ? 'scale(0.95)' : 'translateX(120%)';
+    clearTimeout(hideFadeTimer);
+    hideFadeTimer = setTimeout(onDone, moved ? 340 : 440);
+  };
+
   const hideForCooldown = () => {
     clearStepTimers();
     clearTimeout(exitTimer);
@@ -347,14 +359,11 @@
     wantsExitAfterDrag = false;
     isVisible = false;
     showBubble('', 0);
-    pet.style.transition = 'opacity 280ms ease, transform 280ms ease';
-    pet.style.opacity = '0';
-    pet.style.transform = 'translateY(14px) scale(0.85)';
-    hideFadeTimer = setTimeout(() => {
+    animateExit(() => {
       if (!isVisible) {
         pet.classList.add('hidden');
       }
-    }, 300);
+    });
 
     const nextTs = Date.now() + COOLDOWN_MS;
     try { localStorage.setItem(NEXT_VISIT_KEY, String(nextTs)); } catch (_) {}
@@ -365,6 +374,7 @@
     clearStepTimers();
     clearTimeout(exitTimer);
     clearTimeout(cooldownTimer);
+    clearTimeout(hideFadeTimer);
 
     let epIdx = 0;
     try {
@@ -376,13 +386,16 @@
     isVisible = true;
     pet.classList.remove('hidden');
     restorePosition();
-    pet.style.transition = 'opacity 260ms ease, transform 260ms ease';
+    const moved = pet.classList.contains('tc-monkey-dragged');
+    pet.style.transition = 'none';
     pet.style.opacity = '0';
-    pet.style.transform = 'translateY(14px) scale(0.85)';
-    requestAnimationFrame(() => {
-      pet.style.opacity = '1';
-      pet.style.transform = 'translateY(0) scale(1)';
-    });
+    pet.style.transform = moved ? 'scale(0.95)' : 'translateX(120%)';
+    void pet.offsetWidth;
+    pet.style.transition = moved
+      ? 'opacity 340ms ease, transform 340ms ease'
+      : 'transform 440ms cubic-bezier(0.22, 1, 0.36, 1), opacity 340ms ease';
+    pet.style.opacity = '1';
+    pet.style.transform = moved ? 'scale(1)' : 'translateX(0)';
 
     let elapsed = 0;
     episode.forEach((step, idx) => {
@@ -480,10 +493,7 @@
       clearTimeout(cooldownTimer);
       isVisible = false;
       try { localStorage.setItem(DISMISS_KEY, todayStr); } catch (_) {}
-      pet.style.transition = 'opacity 180ms ease, transform 180ms ease';
-      pet.style.opacity = '0';
-      pet.style.transform = 'scale(0.85)';
-      setTimeout(() => pet.remove(), 200);
+      animateExit(() => pet.remove());
 
       const body = new URLSearchParams();
       body.set('_csrf', csrfToken);

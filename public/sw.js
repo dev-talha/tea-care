@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teacare-shell-v32';
+const CACHE_NAME = 'teacare-shell-v33';
 const STATIC_ASSETS = [
   '/assets/css/app.css',
   '/assets/js/app.js',
