@@ -403,6 +403,19 @@
             }
             lastUrgentCnt = data.urgent;
           }
+          if (typeof data.urgent_pending === 'number') {
+            const navBadge = document.getElementById('nav-urgent-badge');
+            if (navBadge) {
+              if (data.urgent_pending > 0) {
+                navBadge.textContent = data.urgent_pending > 99 ? '99+' : String(data.urgent_pending);
+                navBadge.classList.remove('hidden');
+                navBadge.classList.add('inline-flex');
+              } else {
+                navBadge.classList.add('hidden');
+                navBadge.classList.remove('inline-flex');
+              }
+            }
+          }
         }
 
         if (lastFp === null) {

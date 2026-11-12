@@ -9,6 +9,12 @@ $reqUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $isStaffView = str_starts_with($reqUri, '/staff');
 $canGuest = Auth::canOrderForGuests() && setting('guest_ordering_enabled', '1') === '1';
 $staffTab = $_GET['tab'] ?? 'skipped';
+$navUrgentPending = isset($urgentPendingCount)
+    ? (int)$urgentPendingCount
+    : ($isStaffView ? (int)(\App\Core\Database::fetchOne(
+        "SELECT COUNT(*) AS cnt FROM orders WHERE order_date = ? AND order_type IN ('on_demand', 'guest') AND status = 'pending'",
+        [\App\Services\ScheduleService::today()]
+    )['cnt'] ?? 0) : 0);
 ?>
 <!doctype html>
 <html lang="en">
@@ -176,7 +182,10 @@ $staffTab = $_GET['tab'] ?? 'skipped';
                     <span>Orders</span>
                 </a>
                 <a href="/staff?tab=urgent" class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-semibold <?= ($activeTab ?? '') === 'urgent' ? 'bg-amberwarm-50 text-amberwarm-600' : 'text-slate-500' ?>">
-                    <i class="ti ti-bolt text-xl"></i>
+                    <span class="relative inline-flex items-center justify-center">
+                        <i class="ti ti-bolt text-xl"></i>
+                        <span id="nav-urgent-badge" class="<?= $navUrgentPending > 0 ? 'inline-flex' : 'hidden' ?> absolute -top-1 items-center justify-center h-4 px-1 rounded-full bg-rose-600 text-white font-bold leading-none shadow-sm" style="min-width:1rem;font-size:10px;right:-0.45rem;"><?= $navUrgentPending > 99 ? '99+' : $navUrgentPending ?></span>
+                    </span>
                     <span>Urgent</span>
                 </a>
                 <a href="/staff?tab=completed" class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-semibold <?= ($activeTab ?? '') === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500' ?>">

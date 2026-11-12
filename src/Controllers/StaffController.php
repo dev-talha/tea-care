@@ -83,6 +83,10 @@ class StaffController
             "SELECT COUNT(*) AS cnt FROM orders WHERE order_date = ? AND order_type IN ('on_demand', 'guest') AND status IN ('pending', 'accepted', 'preparing', 'almost_done')",
             [$today]
         )['cnt'] ?? 0);
+        $urgentPendingCount = (int)(Database::fetchOne(
+            "SELECT COUNT(*) AS cnt FROM orders WHERE order_date = ? AND order_type IN ('on_demand', 'guest') AND status = 'pending'",
+            [$today]
+        )['cnt'] ?? 0);
 
         $morningData = OrderService::getSlotDataForStaff($today, 'morning', $filterRoomId, $filterDeptId);
         $afternoonData = OrderService::getSlotDataForStaff($today, 'afternoon', $filterRoomId, $filterDeptId);
@@ -130,6 +134,7 @@ class StaffController
             'skipPage'             => $skipPage,
             'skipTotalPages'       => $skipTotalPages,
             'urgentTotalCount'     => $urgentTotalCount,
+            'urgentPendingCount'   => $urgentPendingCount,
             'urgentOrders'         => $urgentOrders,
             'guestOrders'          => $guestOrders,
             'morningData'          => $morningData,
@@ -291,6 +296,7 @@ class StaffController
                 SUM(CASE WHEN status IN ('accepted', 'preparing', 'almost_done') THEN 1 ELSE 0 END) AS preparing_cnt,
                 SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_cnt,
                 SUM(CASE WHEN order_type IN ('on_demand', 'guest') AND status IN ('pending', 'accepted', 'preparing', 'almost_done') THEN 1 ELSE 0 END) AS urgent_cnt,
+                SUM(CASE WHEN order_type IN ('on_demand', 'guest') AND status = 'pending' THEN 1 ELSE 0 END) AS urgent_pending_cnt,
                 MAX(updated_at) AS last_updated,
                 COUNT(*) AS total_cnt,
                 GROUP_CONCAT(CONCAT(id, ':', status, ':', COALESCE(estimated_minutes, 0)) ORDER BY id ASC) AS sig
@@ -304,12 +310,13 @@ class StaffController
         $fingerprint = md5(json_encode([$stats, $unread, $skippedCnt]));
 
         Response::json([
-            'ok'            => true,
-            'pending'       => (int)($stats['pending_cnt'] ?? 0),
-            'preparing'     => (int)($stats['preparing_cnt'] ?? 0),
-            'delivered'     => (int)($stats['delivered_cnt'] ?? 0),
-            'urgent'        => (int)($stats['urgent_cnt'] ?? 0),
-            'skipped'       => $skippedCnt,
+            'ok'             => true,
+            'pending'        => (int)($stats['pending_cnt'] ?? 0),
+            'preparing'      => (int)($stats['preparing_cnt'] ?? 0),
+            'delivered'      => (int)($stats['delivered_cnt'] ?? 0),
+            'urgent'         => (int)($stats['urgent_cnt'] ?? 0),
+            'urgent_pending' => (int)($stats['urgent_pending_cnt'] ?? 0),
+            'skipped'        => $skippedCnt,
             'unread_notifs' => (int)($unread['cnt'] ?? 0),
             'fingerprint'   => $fingerprint,
             'changed'       => $clientFp === null || $clientFp !== $fingerprint,

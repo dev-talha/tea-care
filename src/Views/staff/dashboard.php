@@ -161,12 +161,12 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
 
 <!-- Urgent Pending Banner (Mobile: only on Home tab; Desktop: always when non-urgent tab) -->
 <?php if ($urgentTotalCount > 0 && $tab !== 'urgent'): ?>
-    <a href="<?= e($buildTabUrl('urgent')) ?>" class="<?= $isHomeTab ? 'flex' : 'hidden md:flex' ?> rounded-2xl bg-amberwarm-500 text-white p-3.5 items-center justify-between gap-2 shadow-sm hover:bg-amberwarm-600 transition">
+    <a href="<?= e($buildTabUrl('urgent')) ?>" style="text-decoration:none" class="<?= $isHomeTab ? 'flex' : 'hidden md:flex' ?> rounded-2xl bg-amberwarm-500 text-white p-3.5 items-center justify-between gap-2 shadow-sm hover:bg-amberwarm-600 transition">
         <span class="text-xs md:text-sm font-bold inline-flex items-center gap-1.5 min-w-0">
             <i class="ti ti-bolt text-base shrink-0"></i>
             <span class="truncate"><?= (int)$urgentTotalCount ?> Urgent / Guest Order(s) waiting</span>
         </span>
-        <span class="text-xs md:text-sm font-extrabold underline inline-flex items-center gap-1 shrink-0">
+        <span class="text-xs md:text-sm font-extrabold inline-flex items-center gap-1 shrink-0">
             <span>View Queue</span>
             <i class="ti ti-arrow-right"></i>
         </span>
