@@ -355,15 +355,11 @@ class EmployeeController
             $meetingTitle = Validator::str(Request::post('meeting_title'), 140);
             $guestCountRaw = Request::post('guest_count');
             $guestCount = is_numeric($guestCountRaw) && (int)$guestCountRaw > 0 ? (int)$guestCountRaw : null;
-            $requestedWithinRaw = Request::post('requested_within');
-            $allowedWithin = [
-                'Immediate',
-                'After 5 min', 'After 10 min', 'After 15 min', 'After 30 min', 'After 45 min', 'After 1 hour',
-                'Within 10 min', 'Within 15 min', 'Within 30 min', 'Within 45 min', 'Within 1 hour',
-            ];
-            $requestedWithin = ($requestedWithinRaw !== null && in_array($requestedWithinRaw, $allowedWithin, true))
-                ? $requestedWithinRaw
-                : null;
+            $requestedWithin = self::parseRequestedWithin(
+                Request::post('needed_mode'),
+                Request::post('needed_minutes'),
+                Request::post('requested_within')
+            );
             $note = Validator::str(Request::post('note'), 220);
             $idempotencyKey = Validator::str(Request::post('idempotency_key'), 80) ?: bin2hex(random_bytes(16));
 
@@ -404,6 +400,34 @@ class EmployeeController
             'idempotencyKey' => bin2hex(random_bytes(16)),
             'activeTab'      => 'more',
         ], 'app'));
+    }
+
+    /** Parse and normalize optional guest timing ("Immediate", "After/Before/Within N min"). */
+    private static function parseRequestedWithin(?string $modeRaw, ?string $minutesRaw, ?string $fallbackRaw): ?string
+    {
+        $mode = Validator::enum($modeRaw, ['Immediate', 'After', 'Before', 'Within'], '');
+        $mins = Validator::intRange($minutesRaw, 1, 480, 0);
+
+        if ($mode === 'Immediate') {
+            return 'Immediate';
+        }
+        if ($mode !== '' && $mins > 0) {
+            return "{$mode} {$mins} min";
+        }
+
+        $raw = trim((string)($fallbackRaw ?? ''));
+        if (strcasecmp($raw, 'Immediate') === 0) {
+            return 'Immediate';
+        }
+        if (preg_match('/^(After|Before|Within)\s+([1-9]\d{0,2})\s*(min|mins|minute|minutes|hr|hrs|hour|hours)$/i', $raw, $m)) {
+            $unit = str_starts_with(strtolower($m[3]), 'h') ? 'hour' : 'min';
+            $val = (int)$m[2];
+            $maxVal = $unit === 'hour' ? 8 : 480;
+            if ($val >= 1 && $val <= $maxVal) {
+                return ucfirst(strtolower($m[1])) . " {$val} {$unit}";
+            }
+        }
+        return null;
     }
 
     public function history(): void

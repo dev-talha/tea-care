@@ -32,13 +32,21 @@ $title = __('guest_order_title');
                 <input id="guest_count" name="guest_count" type="number" min="1" max="100" class="input-field" placeholder="e.g. 5">
             </div>
             <div>
-                <label class="label-text" for="requested_within">When Needed (Approx.)</label>
-                <select id="requested_within" name="requested_within" class="input-field">
-                    <option value="" selected>Select time (Optional)</option>
-                    <?php foreach (['Immediate', 'After 5 min', 'After 10 min', 'After 15 min', 'After 30 min', 'After 45 min', 'After 1 hour'] as $optLabel): ?>
-                        <option value="<?= e($optLabel) ?>"><?= e($optLabel) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <label class="label-text" for="needed_mode">When Needed (Approx.)</label>
+                <div class="flex items-center gap-2">
+                    <select id="needed_mode" name="needed_mode" class="input-field flex-1 min-w-0">
+                        <option value="" selected>Select timing (Optional)</option>
+                        <option value="Immediate">Immediate</option>
+                        <option value="After">After</option>
+                        <option value="Before">Before</option>
+                        <option value="Within">Within</option>
+                    </select>
+                    <div id="needed-min-wrap" class="hidden items-center gap-1.5 shrink-0">
+                        <input id="needed_minutes" name="needed_minutes" type="number" min="1" max="480" inputmode="numeric" placeholder="Min" class="input-field w-24 text-center font-semibold">
+                        <span class="text-xs font-semibold text-slate-600">min</span>
+                    </div>
+                </div>
+                <input type="hidden" id="requested_within" name="requested_within" value="">
             </div>
         </div>
 
@@ -132,4 +140,38 @@ function removeGuestLine(btn) {
 document.addEventListener('change', (e) => {
     if (e.target && e.target.name === 'item_quantity[]') updateGuestTotal();
 });
+
+(() => {
+    const modeEl = document.getElementById('needed_mode');
+    const minWrap = document.getElementById('needed-min-wrap');
+    const minEl = document.getElementById('needed_minutes');
+    const hiddenEl = document.getElementById('requested_within');
+    if (!modeEl || !minWrap || !minEl || !hiddenEl) return;
+
+    const syncNeededField = (focusMin = false) => {
+        const mode = modeEl.value;
+        const needsMins = mode === 'After' || mode === 'Before' || mode === 'Within';
+        minWrap.classList.toggle('hidden', !needsMins);
+        minWrap.classList.toggle('flex', needsMins);
+        minEl.required = needsMins;
+
+        if (mode === 'Immediate') {
+            hiddenEl.value = 'Immediate';
+            minEl.value = '';
+        } else if (needsMins) {
+            const mins = parseInt(minEl.value || '0', 10);
+            hiddenEl.value = mins > 0 ? (mode + ' ' + mins + ' min') : '';
+            if (focusMin) minEl.focus();
+        } else {
+            hiddenEl.value = '';
+            minEl.value = '';
+        }
+    };
+
+    modeEl.addEventListener('change', () => syncNeededField(true));
+    minEl.addEventListener('input', () => syncNeededField(false));
+    minEl.addEventListener('change', () => syncNeededField(false));
+    const form = modeEl.closest('form');
+    if (form) form.addEventListener('submit', () => syncNeededField(false));
+})();
 </script>
