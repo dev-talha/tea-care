@@ -122,7 +122,10 @@ class WhatsAppService
         }
 
         Database::execute(
-            "UPDATE whatsapp_jobs SET status = 'pending' WHERE status = 'processing' AND processed_at IS NULL AND created_at < DATE_SUB(NOW(), INTERVAL 3 MINUTE)"
+            "UPDATE whatsapp_jobs
+             SET status = 'pending', next_retry_at = NULL
+             WHERE status = 'processing' AND processed_at IS NULL
+               AND ((next_retry_at IS NOT NULL AND next_retry_at <= NOW()) OR (next_retry_at IS NULL AND created_at < DATE_SUB(NOW(), INTERVAL 3 MINUTE)))"
         );
 
         $jobs = Database::fetchAll(
@@ -142,7 +145,9 @@ class WhatsAppService
 
         foreach ($jobs as $job) {
             $claimed = Database::execute(
-                "UPDATE whatsapp_jobs SET status = 'processing', attempts = attempts + 1 WHERE id = ? AND status = 'pending'",
+                "UPDATE whatsapp_jobs
+                 SET status = 'processing', attempts = attempts + 1, next_retry_at = DATE_ADD(NOW(), INTERVAL 3 MINUTE)
+                 WHERE id = ? AND status = 'pending'",
                 [$job['id']]
             );
             if ($claimed === 0) {

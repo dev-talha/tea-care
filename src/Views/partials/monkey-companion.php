@@ -9,8 +9,8 @@ $showMonkey = (int)($user['show_funny_monkey'] ?? 1) === 1
 <?php if ($showMonkey): ?>
 <style>
 @media (max-width: 767px) {
-    #tc-monkey-dock {
-        padding-bottom: 5.5rem;
+    #tc-monkey-pet:not(.tc-monkey-dragged) {
+        bottom: calc(4.75rem + env(safe-area-inset-bottom));
     }
 }
 @media (min-width: 768px) {
@@ -31,7 +31,7 @@ $showMonkey = (int)($user['show_funny_monkey'] ?? 1) === 1
 <div id="tc-monkey-pet"
      data-today="<?= e($monkeyToday) ?>"
      data-csrf="<?= e(Session::csrfToken()) ?>"
-     class="fixed bottom-20 right-3 z-40 select-none touch-none hidden"
+     class="fixed bottom-20 right-3 z-30 select-none touch-none hidden"
      style="width: 112px;"
      aria-label="TeaCare Funny Monkey Companion">
 

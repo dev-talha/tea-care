@@ -48,7 +48,9 @@ class StaffController
         $skipTotalPages = max(1, (int)ceil($skippedFilteredCount / $perPage));
         $skipPage = in_array($tab, ['home', 'skipped'], true) ? min($page, $skipTotalPages) : 1;
         $skippedList = array_slice($allSkipped, ($skipPage - 1) * $perPage, $perPage);
-        $totalSkippedAll = count(OrderService::getSkippedListForStaff($today, null, null));
+        $totalSkippedAll = (!$filterRoomId && !$filterDeptId)
+            ? $skippedFilteredCount
+            : OrderService::getSkippedCountForStaff($today);
 
         $whereExtra = '';
         $extraParams = [];
@@ -291,9 +293,10 @@ class StaffController
     {
         Auth::requireRole(['staff', 'admin']);
         $today = ScheduleService::today();
-        OrderService::autoCancelExpiredOrders();
+        OrderService::maybeAutoCancelExpiredOrders();
         $clientFp = Request::get('fp');
 
+        Database::pdo()->exec('SET SESSION group_concat_max_len = 1048576');
         $stats = Database::fetchOne(
             "SELECT
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_cnt,
@@ -310,7 +313,7 @@ class StaffController
         );
 
         $unread = Database::fetchOne('SELECT COUNT(*) AS cnt FROM staff_inapp_notifications WHERE is_read = 0');
-        $skippedCnt = count(OrderService::getSkippedListForStaff($today, null, null));
+        $skippedCnt = OrderService::getSkippedCountForStaff($today);
         $fingerprint = md5(json_encode([$stats, $unread, $skippedCnt]));
 
         Response::json([

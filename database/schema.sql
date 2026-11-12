@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_users_role_status (role, status),
     INDEX idx_users_dept_room (department_id, room_id),
     INDEX idx_users_room_id (room_id),
+    INDEX idx_users_created_at (created_at),
     CONSTRAINT fk_users_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
     CONSTRAINT fk_users_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -133,7 +134,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT UNSIGNED NOT NULL,
     beverage ENUM('tea', 'coffee') NOT NULL,
-    sugar ENUM('normal', 'less', 'none') NOT NULL DEFAULT 'normal',
+    sugar ENUM('normal', 'less', 'extra', 'none') NOT NULL DEFAULT 'normal',
     quantity SMALLINT UNSIGNED NOT NULL DEFAULT 1,
     note VARCHAR(255) NOT NULL DEFAULT '',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -191,7 +191,12 @@ $navItems = [
             document.body.style.overflow = next ? 'hidden' : '';
         }
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') toggleAdminDrawer(false);
+            if (e.key === 'Escape') {
+                const sb = document.getElementById('admin-sidebar');
+                if (sb && sb.classList.contains('is-open')) {
+                    toggleAdminDrawer(false);
+                }
+            }
         });
     </script>
     <script src="/assets/js/app.js?v=<?= @filemtime(__DIR__ . '/../../../public/assets/js/app.js') ?: '2' ?>"></script>

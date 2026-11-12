@@ -467,13 +467,24 @@
       } catch (e) {}
     };
 
+    let syncAbortCtrl = null;
+    let syncSeq = 0;
+    let pendingForcedRefresh = false;
+
     const syncHtmlFromCurrentUrl = async () => {
+      if (syncAbortCtrl) {
+        syncAbortCtrl.abort();
+      }
+      syncAbortCtrl = new AbortController();
+      const seq = ++syncSeq;
       const res = await fetch(window.location.href, {
         headers: { 'X-TeaCare-Live': '1' },
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        signal: syncAbortCtrl.signal
       });
-      if (!res.ok) return;
+      if (!res.ok || seq !== syncSeq) return;
       const html = await res.text();
+      if (seq !== syncSeq) return;
       const doc = new DOMParser().parseFromString(html, 'text/html');
 
       if (isStaffLive) {
@@ -509,7 +520,11 @@
     };
 
     const runLivePoll = async (forceRefresh = false) => {
-      if (syncing || !navigator.onLine) return;
+      if (!navigator.onLine) return;
+      if (syncing) {
+        if (forceRefresh) pendingForcedRefresh = true;
+        return;
+      }
       if (!forceRefresh && document.visibilityState === 'hidden') return;
       if (!forceRefresh && document.activeElement && document.activeElement.tagName === 'SELECT' && document.activeElement.closest('#staff-live-panel')) {
         scheduleNextPoll();
@@ -574,10 +589,17 @@
           unchangedCount++;
         }
       } catch (e) {
-        errorCount++;
+        if (!e || e.name !== 'AbortError') {
+          errorCount++;
+        }
       } finally {
         syncing = false;
-        scheduleNextPoll();
+        if (pendingForcedRefresh) {
+          pendingForcedRefresh = false;
+          runLivePoll(true);
+        } else {
+          scheduleNextPoll();
+        }
       }
     };
 
@@ -596,6 +618,7 @@
         btn.classList.add('opacity-70');
       }
 
+      let postCompleted = false;
       try {
         const res = await fetch(form.action, {
           method: 'POST',
@@ -603,21 +626,29 @@
           headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
           credentials: 'same-origin'
         });
+        postCompleted = true;
         const data = await res.json().catch(() => ({ ok: res.ok }));
         if (!data.ok && data.error) {
           showAlert(data.error, 'error');
         } else if (data.ok && data.message) {
           showAlert(data.message, 'success');
         }
-        await runLivePoll(true);
       } catch (err) {
-        form.submit();
+        if (!postCompleted) {
+          form.submit();
+        }
       } finally {
         resetNavProgress();
         if (btn) {
           btn.disabled = false;
           btn.classList.remove('opacity-70');
         }
+      }
+
+      if (postCompleted) {
+        try {
+          await runLivePoll(true);
+        } catch (_) {}
       }
     });
 

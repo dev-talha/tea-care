@@ -50,38 +50,39 @@ $title = __('rooms');
         </thead>
         <tbody class="divide-y divide-stone-100">
             <?php foreach ($rooms as $r): ?>
+                <?php $rfId = 'room-form-' . (int)$r['id']; ?>
                 <tr>
                     <td class="px-4 py-2.5">
-                        <form method="post" action="/admin/rooms" class="contents">
+                        <form id="<?= $rfId ?>" method="post" action="/admin/rooms" class="hidden">
                             <?= Session::csrfField() ?>
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                            <input name="name" value="<?= e($r['name']) ?>" class="input-field text-xs py-1.5">
+                        </form>
+                        <input form="<?= $rfId ?>" name="name" value="<?= e($r['name']) ?>" class="input-field text-xs py-1.5">
                     </td>
                     <td class="px-4 py-2.5">
-                            <input name="floor" value="<?= e($r['floor'] ?? '') ?>" class="input-field text-xs py-1.5 w-28">
+                        <input form="<?= $rfId ?>" name="floor" value="<?= e($r['floor'] ?? '') ?>" class="input-field text-xs py-1.5 w-28">
                     </td>
                     <td class="px-4 py-2.5">
-                            <select name="room_type" class="input-field text-xs py-1.5 w-28">
-                                <option value="office" <?= $r['room_type'] === 'office' ? 'selected' : '' ?>>Office</option>
-                                <option value="meeting" <?= $r['room_type'] === 'meeting' ? 'selected' : '' ?>>Meeting</option>
-                            </select>
+                        <select form="<?= $rfId ?>" name="room_type" class="input-field text-xs py-1.5 w-28">
+                            <option value="office" <?= $r['room_type'] === 'office' ? 'selected' : '' ?>>Office</option>
+                            <option value="meeting" <?= $r['room_type'] === 'meeting' ? 'selected' : '' ?>>Meeting</option>
+                        </select>
                     </td>
                     <td class="px-4 py-2.5">
-                            <select name="department_id" class="input-field text-xs py-1.5">
-                                <option value="">None</option>
-                                <?php foreach ($departments as $d): ?>
-                                    <option value="<?= (int)$d['id'] ?>" <?= (int)$r['department_id'] === (int)$d['id'] ? 'selected' : '' ?>><?= e($d['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <select form="<?= $rfId ?>" name="department_id" class="input-field text-xs py-1.5">
+                            <option value="">None</option>
+                            <?php foreach ($departments as $d): ?>
+                                <option value="<?= (int)$d['id'] ?>" <?= (int)$r['department_id'] === (int)$d['id'] ? 'selected' : '' ?>><?= e($d['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </td>
                     <td class="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap"><?= !empty($r['created_at']) ? e(date('d M Y, g:i A', strtotime($r['created_at']))) : '-' ?></td>
                     <td class="px-4 py-2.5 text-center">
-                            <input type="checkbox" name="is_active" value="1" <?= (int)$r['is_active'] === 1 ? 'checked' : '' ?> class="w-4 h-4 accent-tea-600">
+                        <input form="<?= $rfId ?>" type="checkbox" name="is_active" value="1" <?= (int)$r['is_active'] === 1 ? 'checked' : '' ?> class="w-4 h-4 accent-tea-600">
                     </td>
                     <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                            <button type="submit" class="px-3 py-1.5 rounded-lg bg-tea-600 text-white text-xs font-bold">Save</button>
-                        </form>
+                        <button form="<?= $rfId ?>" type="submit" class="px-3 py-1.5 rounded-lg bg-tea-600 text-white text-xs font-bold">Save</button>
                         <?php if ((int)$r['user_count'] === 0): ?>
                             <form method="post" action="/admin/rooms" class="inline-block ml-1" onsubmit="return confirm('Delete this room?');">
                                 <?= Session::csrfField() ?>

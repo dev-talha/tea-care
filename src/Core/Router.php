@@ -40,7 +40,19 @@ class Router
                     Response::json(['ok' => false, 'error' => __('csrf_invalid')], 419);
                 }
                 Session::flash('error', __('csrf_invalid'));
-                Response::redirect($_SERVER['HTTP_REFERER'] ?? '/');
+                $ref = (string)($_SERVER['HTTP_REFERER'] ?? '/');
+                $refParts = parse_url($ref);
+                $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+                $safeRef = '/';
+                if (is_array($refParts)) {
+                    $refHost = (string)($refParts['host'] ?? '');
+                    $refPath = (string)($refParts['path'] ?? '/');
+                    if (($refHost === '' && str_starts_with($refPath, '/') && !str_starts_with($refPath, '//'))
+                        || ($refHost !== '' && $host !== '' && strcasecmp($refHost, $host) === 0)) {
+                        $safeRef = $refPath . (isset($refParts['query']) ? '?' . $refParts['query'] : '');
+                    }
+                }
+                Response::redirect($safeRef);
             }
         }
 

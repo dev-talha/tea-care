@@ -13,10 +13,14 @@ class MediaController
 {
     public function cupPhoto(): void
     {
-        Auth::requireAuth();
+        $me = Auth::requireAuth();
         $userId = (int)Request::get('user_id', 0);
         if ($userId <= 0) {
             http_response_code(404);
+            exit;
+        }
+        if (!in_array($me['role'], ['staff', 'admin'], true) && (int)$me['id'] !== $userId) {
+            http_response_code(403);
             exit;
         }
 

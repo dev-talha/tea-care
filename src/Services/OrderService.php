@@ -295,6 +295,12 @@ class OrderService
             [$date, $slotKey, $slotKey]
         );
 
+        $existingRows = Database::fetchAll(
+            "SELECT regular_unique_key FROM orders WHERE order_date = ? AND order_type = 'regular' AND slot_key = ?",
+            [$date, $slotKey]
+        );
+        $existingKeys = array_flip(array_column($existingRows, 'regular_unique_key'));
+
         $createdCount = 0;
         $teaTotal = 0;
         $coffeeTotal = 0;
@@ -333,8 +339,7 @@ class OrderService
             }
 
             $regularUniqueKey = "{$date}:{$slotKey}:{$c['user_id']}";
-            $already = Database::fetchOne('SELECT id FROM orders WHERE regular_unique_key = ?', [$regularUniqueKey]);
-            if ($already) {
+            if (isset($existingKeys[$regularUniqueKey])) {
                 continue;
             }
 
@@ -508,14 +513,13 @@ class OrderService
             throw new \RuntimeException('Please add at least one beverage line.');
         }
 
-        $allowedWithin = [
-            'Immediate',
-            'After 5 min', 'After 10 min', 'After 15 min', 'After 30 min', 'After 45 min', 'After 1 hour',
-            'Within 10 min', 'Within 15 min', 'Within 30 min', 'Within 45 min', 'Within 1 hour',
-        ];
-        $neededWithin = ($requestedWithin !== null && in_array($requestedWithin, $allowedWithin, true))
-            ? $requestedWithin
-            : null;
+        $neededWithin = null;
+        if ($requestedWithin !== null) {
+            $rw = trim($requestedWithin);
+            if ($rw === 'Immediate' || preg_match('/^(After|Before|Within) ([1-9]\d{0,2}) (min|hour)$/', $rw)) {
+                $neededWithin = $rw;
+            }
+        }
 
         $today = ScheduleService::today();
         $room = Database::fetchOne('SELECT id, name FROM rooms WHERE id = ?', [$roomId]);
@@ -708,6 +712,17 @@ class OrderService
         });
     }
 
+    public static function maybeAutoCancelExpiredOrders(int $cooldownSeconds = 60): int
+    {
+        $stampFile = rtrim(sys_get_temp_dir(), '/\\') . '/teacare_autocancel.stamp';
+        $last = @filemtime($stampFile);
+        if ($last !== false && (time() - $last) < $cooldownSeconds) {
+            return 0;
+        }
+        @touch($stampFile);
+        return self::autoCancelExpiredOrders();
+    }
+
     public static function autoCancelExpiredOrders(?\DateTimeImmutable $now = null): int
     {
         $refNow = $now ?? ScheduleService::now();
@@ -752,8 +767,12 @@ class OrderService
         $activeExpired = Database::fetchAll(
             "SELECT id FROM orders
              WHERE status IN ('accepted', 'preparing', 'almost_done')
-               AND COALESCE(accepted_at, prepared_at, created_at) <= ?",
-            [$cutoffStr]
+               AND (
+                   (accepted_at IS NOT NULL AND accepted_at <= ?)
+                   OR (accepted_at IS NULL AND prepared_at IS NOT NULL AND prepared_at <= ?)
+                   OR (accepted_at IS NULL AND prepared_at IS NULL AND created_at <= ?)
+               )",
+            [$cutoffStr, $cutoffStr, $cutoffStr]
         );
         foreach ($activeExpired as $row) {
             $id = (int)$row['id'];
@@ -790,7 +809,7 @@ class OrderService
 
     public static function deliverRoomOrders(int $roomId, string $date, string $slotKey, array $orderIds, array $actor): int
     {
-        if (empty($orderIds)) {
+        if ($roomId <= 0 || empty($orderIds)) {
             return 0;
         }
         $cleanIds = array_values(array_filter(array_map('intval', $orderIds), fn($v) => $v > 0));
@@ -812,7 +831,7 @@ class OrderService
             $orders = Database::fetchAll($sql, $params);
 
             foreach ($orders as $order) {
-                if ((int)($order['room_id'] ?? 0) !== $roomId && $roomId > 0) {
+                if ((int)($order['room_id'] ?? 0) !== $roomId) {
                     continue;
                 }
                 $affected = Database::execute(
@@ -919,6 +938,28 @@ class OrderService
         }
 
         return $skipped;
+    }
+
+    public static function getSkippedCountForStaff(string $date): int
+    {
+        $row = Database::fetchOne(
+            "SELECT COALESCE(SUM(
+                CASE
+                    WHEN u.is_paused = 1 THEN 1
+                    ELSE
+                        (CASE WHEN ovm.override_type = 'skip' OR (ovm.override_type IS NULL AND dpm.enabled = 0) THEN 1 ELSE 0 END)
+                        + (CASE WHEN ova.override_type = 'skip' OR (ova.override_type IS NULL AND dpa.enabled = 0) THEN 1 ELSE 0 END)
+                END
+            ), 0) AS cnt
+             FROM users u
+             LEFT JOIN daily_overrides ovm ON ovm.user_id = u.id AND ovm.service_date = ? AND ovm.slot_key = 'morning'
+             LEFT JOIN daily_overrides ova ON ova.user_id = u.id AND ova.service_date = ? AND ova.slot_key = 'afternoon'
+             LEFT JOIN default_preferences dpm ON dpm.user_id = u.id AND dpm.slot_key = 'morning'
+             LEFT JOIN default_preferences dpa ON dpa.user_id = u.id AND dpa.slot_key = 'afternoon'
+             WHERE u.status = 'active' AND u.role IN ('employee', 'admin')",
+            [$date, $date]
+        );
+        return (int)($row['cnt'] ?? 0);
     }
 
     public static function getSlotDataForStaff(string $date, string $slotKey, ?int $roomId = null, ?int $deptId = null): array

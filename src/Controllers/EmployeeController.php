@@ -58,9 +58,10 @@ class EmployeeController
     {
         $user = Auth::requireRole(['employee', 'admin', 'staff']);
         $today = ScheduleService::today();
-        OrderService::autoCancelExpiredOrders();
+        OrderService::maybeAutoCancelExpiredOrders();
         $clientFp = Request::get('fp');
 
+        Database::pdo()->exec('SET SESSION group_concat_max_len = 1048576');
         $ordersSig = Database::fetchOne(
             "SELECT COUNT(*) AS cnt, MAX(updated_at) AS max_upd,
                     GROUP_CONCAT(CONCAT(id, ':', status, ':', COALESCE(estimated_minutes, 0), ':', COALESCE(accepted_by, 0)) ORDER BY id ASC) AS sig

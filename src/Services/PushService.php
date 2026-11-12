@@ -93,9 +93,12 @@ class PushService
             return 0;
         }
 
-        // Recover stale processing jobs older than 3 minutes
+        // Recover stale processing jobs whose claim lease (>3 minutes) expired
         Database::execute(
-            "UPDATE notification_jobs SET status = 'pending' WHERE status = 'processing' AND processed_at IS NULL AND created_at < DATE_SUB(NOW(), INTERVAL 3 MINUTE)"
+            "UPDATE notification_jobs
+             SET status = 'pending', next_retry_at = NULL
+             WHERE status = 'processing' AND processed_at IS NULL
+               AND ((next_retry_at IS NOT NULL AND next_retry_at <= NOW()) OR (next_retry_at IS NULL AND created_at < DATE_SUB(NOW(), INTERVAL 3 MINUTE)))"
         );
 
         $jobs = Database::fetchAll(
@@ -113,7 +116,9 @@ class PushService
         $processed = 0;
         foreach ($jobs as $job) {
             $claimed = Database::execute(
-                "UPDATE notification_jobs SET status = 'processing', attempts = attempts + 1 WHERE id = ? AND status = 'pending'",
+                "UPDATE notification_jobs
+                 SET status = 'processing', attempts = attempts + 1, next_retry_at = DATE_ADD(NOW(), INTERVAL 3 MINUTE)
+                 WHERE id = ? AND status = 'pending'",
                 [$job['id']]
             );
             if ($claimed === 0) {
@@ -194,6 +199,7 @@ class PushService
                         [$job['id'], $subId, $subUserId, $job['title'], $statusCode]
                     );
                 } elseif ($report->isSubscriptionExpired()) {
+                    $lastErr ??= 'Push subscription expired';
                     if ($subId) {
                         Database::execute(
                             "UPDATE push_subscriptions SET is_active = 0, last_error = 'Subscription expired', updated_at = NOW() WHERE id = ?",

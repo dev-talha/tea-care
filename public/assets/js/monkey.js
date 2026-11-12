@@ -326,6 +326,7 @@
   let stepTimers = [];
   let exitTimer = null;
   let cooldownTimer = null;
+  let hideFadeTimer = null;
   let isVisible = false;
   let isDragging = false;
   let wantsExitAfterDrag = false;
@@ -338,6 +339,7 @@
   const hideForCooldown = () => {
     clearStepTimers();
     clearTimeout(exitTimer);
+    clearTimeout(hideFadeTimer);
     if (isDragging) {
       wantsExitAfterDrag = true;
       return;
@@ -348,7 +350,7 @@
     pet.style.transition = 'opacity 280ms ease, transform 280ms ease';
     pet.style.opacity = '0';
     pet.style.transform = 'translateY(14px) scale(0.85)';
-    setTimeout(() => {
+    hideFadeTimer = setTimeout(() => {
       if (!isVisible) {
         pet.classList.add('hidden');
       }
@@ -451,7 +453,12 @@
         }
       } else {
         // Tap triggers a surprise instant trick from all 18 activities
+        clearTimeout(hideFadeTimer);
         clearStepTimers();
+        isVisible = true;
+        pet.classList.remove('hidden');
+        pet.style.opacity = '1';
+        pet.style.transform = 'translateY(0) scale(1)';
         const keys = Object.keys(ACTIVITIES);
         const randKey = keys[Math.floor(Math.random() * keys.length)];
         applyActivity(randKey, 5500);

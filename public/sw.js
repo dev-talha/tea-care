@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teacare-shell-v27';
+const CACHE_NAME = 'teacare-shell-v28';
 const STATIC_ASSETS = [
   '/assets/css/app.css',
   '/assets/js/app.js',
@@ -34,8 +34,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Only cache static assets and offline page; never cache authenticated order data
+  // Cache static assets: stale-while-revalidate when unversioned, cache-first when versioned (?v=)
   if (url.pathname.startsWith('/assets/')) {
+    if (!url.search) {
+      event.respondWith(
+        caches.match(req).then((cached) => {
+          const netFetch = fetch(req).then((res) => {
+            if (res && res.status === 200) {
+              const clone = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put(req, clone));
+            }
+            return res;
+          }).catch(() => cached);
+          return cached || netFetch;
+        })
+      );
+      return;
+    }
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
         if (res && res.status === 200) {
@@ -43,7 +58,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((c) => c.put(req, clone));
         }
         return res;
-      }))
+      }).catch(() => caches.match(url.pathname)))
     );
     return;
   }
@@ -88,10 +103,12 @@ self.addEventListener('notificationclick', (event) => {
   const targetUrl = (event.notification.data && event.notification.data.url) || '/staff';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
       for (const client of clientList) {
         if ('focus' in client) {
-          client.navigate(targetUrl);
+          if ('navigate' in client) {
+            await client.navigate(targetUrl).catch(() => {});
+          }
           return client.focus();
         }
       }

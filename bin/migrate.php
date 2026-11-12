@@ -226,6 +226,7 @@ foreach ([
 // Performance indexes for paginated admin tables (fast ORDER BY / GROUP BY / COUNT at scale)
 $perfIndexes = [
     ['users', 'idx_users_room_id', 'room_id'],
+    ['users', 'idx_users_created_at', 'created_at'],
     ['orders', 'idx_orders_date_created', 'order_date, created_at'],
     ['notification_jobs', 'idx_notif_jobs_created', 'created_at'],
     ['whatsapp_jobs', 'idx_wa_jobs_created', 'created_at'],
@@ -253,6 +254,15 @@ if ($guestAccessMigrated !== '1') {
     $pdo->exec("UPDATE users SET can_order_for_guests = 1 WHERE role IN ('employee', 'admin') AND can_order_for_guests = 0");
     $pdo->exec("INSERT INTO settings (setting_key, setting_value) VALUES ('default_all_employees_guest_access_v1_applied', '1') ON DUPLICATE KEY UPDATE setting_value = '1'");
     echo "[migrate] Granted default guest order access to all existing employees.\n";
+}
+
+// Ensure sugar ENUMs include 'extra' on upgraded databases
+foreach (['default_preferences', 'daily_overrides', 'order_items'] as $sugarTbl) {
+    $sugarType = (string)($pdo->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$sugarTbl}' AND COLUMN_NAME = 'sugar'")->fetchColumn() ?? '');
+    if ($sugarType !== '' && strpos($sugarType, "'extra'") === false) {
+        $pdo->exec("ALTER TABLE `{$sugarTbl}` MODIFY COLUMN sugar ENUM('normal', 'less', 'extra', 'none') NOT NULL DEFAULT 'normal'");
+        echo "[migrate] Updated {$sugarTbl}.sugar ENUM with 'extra'.\n";
+    }
 }
 
 echo "[migrate] Schema and seed up to date.\n";

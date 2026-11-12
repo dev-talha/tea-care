@@ -58,9 +58,23 @@ class Request
 
     public static function ip(): string
     {
-        return $_SERVER['HTTP_X_REAL_IP']
-            ?? $_SERVER['HTTP_CF_CONNECTING_IP']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? '0.0.0.0';
+        $remote = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        // Only trust forwarding headers when the direct peer is a local/private reverse proxy
+        $isTrustedProxy = filter_var(
+            $remote,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) === false;
+
+        if ($isTrustedProxy) {
+            foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP'] as $hdr) {
+                $val = trim((string)($_SERVER[$hdr] ?? ''));
+                if ($val !== '' && filter_var($val, FILTER_VALIDATE_IP)) {
+                    return $val;
+                }
+            }
+        }
+
+        return $remote;
     }
 }

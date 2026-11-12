@@ -25,22 +25,23 @@ $title = __('departments');
         </thead>
         <tbody class="divide-y divide-stone-100">
             <?php foreach ($departments as $d): ?>
+                <?php $dfId = 'dept-form-' . (int)$d['id']; ?>
                 <tr>
                     <td class="px-4 py-3">
-                        <form method="post" action="/admin/departments" class="flex items-center gap-2">
+                        <form id="<?= $dfId ?>" method="post" action="/admin/departments" class="hidden">
                             <?= Session::csrfField() ?>
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<?= (int)$d['id'] ?>">
-                            <input name="name" value="<?= e($d['name']) ?>" class="input-field text-sm py-1.5 max-w-xs">
+                        </form>
+                        <input form="<?= $dfId ?>" name="name" value="<?= e($d['name']) ?>" class="input-field text-sm py-1.5 max-w-xs">
                     </td>
                     <td class="px-4 py-3 text-center font-semibold"><?= (int)$d['user_count'] ?></td>
                     <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap"><?= !empty($d['created_at']) ? e(date('d M Y, g:i A', strtotime($d['created_at']))) : '-' ?></td>
                     <td class="px-4 py-3 text-center">
-                            <input type="checkbox" name="is_active" value="1" <?= (int)$d['is_active'] === 1 ? 'checked' : '' ?> class="w-4 h-4 accent-tea-600">
+                        <input form="<?= $dfId ?>" type="checkbox" name="is_active" value="1" <?= (int)$d['is_active'] === 1 ? 'checked' : '' ?> class="w-4 h-4 accent-tea-600">
                     </td>
-                    <td class="px-4 py-3 text-right">
-                            <button type="submit" class="px-3 py-1.5 rounded-lg bg-tea-600 text-white text-xs font-bold">Save</button>
-                        </form>
+                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                        <button form="<?= $dfId ?>" type="submit" class="px-3 py-1.5 rounded-lg bg-tea-600 text-white text-xs font-bold">Save</button>
                         <?php if ((int)$d['user_count'] === 0): ?>
                             <form method="post" action="/admin/departments" class="inline-block ml-1" onsubmit="return confirm('Delete this department?');">
                                 <?= Session::csrfField() ?>

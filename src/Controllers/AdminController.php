@@ -523,21 +523,25 @@ class AdminController
         $to = Validator::str(Request::get('to'), 20) ?: $today;
 
         if (Request::get('export') === 'csv') {
-            $rows = Database::fetchAll(
+            $stmt = Database::pdo()->prepare(
                 "SELECT o.id, o.order_date, o.order_type, o.slot_key, o.employee_id_snapshot,
                         o.employee_name_snapshot, o.department_name_snapshot, o.room_name_snapshot,
                         o.status, oi.beverage, oi.sugar, oi.quantity, o.note, o.created_at, o.delivered_at
                  FROM orders o
                  INNER JOIN order_items oi ON oi.order_id = o.id
                  WHERE o.order_date BETWEEN ? AND ?
-                 ORDER BY o.order_date DESC, o.id DESC",
-                [$from, $to]
+                 ORDER BY o.order_date DESC, o.id DESC"
             );
-            $csvRows = array_map(fn($r) => array_values($r), $rows);
+            $stmt->execute([$from, $to]);
+            $streamRows = (function () use ($stmt): \Generator {
+                while ($r = $stmt->fetch(\PDO::FETCH_NUM)) {
+                    yield $r;
+                }
+            })();
             Response::csv(
                 "teacare-report-{$from}-to-{$to}.csv",
                 ['Order ID', 'Date', 'Type', 'Session', 'Emp ID', 'Employee', 'Department', 'Room', 'Status', 'Beverage', 'Sugar', 'Qty', 'Note', 'Created', 'Delivered'],
-                $csvRows
+                $streamRows
             );
         }
 

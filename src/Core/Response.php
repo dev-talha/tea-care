@@ -32,7 +32,7 @@ class Response
         exit;
     }
 
-    public static function csv(string $filename, array $headers, array $rows): never
+    public static function csv(string $filename, array $headers, iterable $rows): never
     {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . basename($filename) . '"');

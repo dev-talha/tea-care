@@ -323,6 +323,12 @@ $defGuestUserId = (int)Database::insert(
 $defGuestRow = Database::fetchOne('SELECT can_order_for_guests FROM users WHERE id = ?', [$defGuestUserId]);
 assertTrue((int)($defGuestRow['can_order_for_guests'] ?? 0) === 1, 'New employees default to can_order_for_guests = 1');
 
+// Verify flexible guest requested_within values, room-batch guard, and skipped count parity
+$flexGuest = OrderService::createGuestOrder($empA, 6, 'Before Check', 2, [['beverage' => 'tea', 'sugar' => 'normal', 'quantity' => 1]], '', 'flex-rw-' . bin2hex(random_bytes(4)), 'Before 15 min');
+assertTrue(($flexGuest['requested_within'] ?? '') === 'Before 15 min', 'Guest order preserves Before/custom requested_within intervals');
+assertTrue(OrderService::deliverRoomOrders(0, $testDate, 'afternoon', [(int)$aAfternoon['id']], $staff) === 0, 'Room batch delivery rejects invalid room_id <= 0');
+assertTrue(OrderService::getSkippedCountForStaff($testDate) === count(OrderService::getSkippedListForStaff($testDate, null, null)), 'Skipped count helper matches full skipped list count');
+
 // Cleanup test data
 Database::execute("DELETE FROM staff_announcements WHERE announce_date = ?", [$testDate]);
 Database::execute("DELETE FROM whatsapp_jobs WHERE order_id IN (SELECT id FROM orders WHERE order_date = ? OR user_id IN (?, ?, ?, ?, ?))", [$testDate, $empAId, $empBId, $empUnconfId, $empPausedId, $empOptOutId]);
