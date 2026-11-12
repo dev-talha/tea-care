@@ -314,6 +314,15 @@ assertTrue(
     'Extra sugar preference and order item persistence works'
 );
 
+// Verify newly inserted employees default to can_order_for_guests = 1
+$defGuestUserId = (int)Database::insert(
+    "INSERT INTO users (employee_id, full_name, password_hash, role, department_id, room_id, status)
+     VALUES ('TEST_DEF_GUEST', 'Test Default Guest', ?, 'employee', 1, 1, 'active')",
+    [password_hash('Pass123!', PASSWORD_DEFAULT)]
+);
+$defGuestRow = Database::fetchOne('SELECT can_order_for_guests FROM users WHERE id = ?', [$defGuestUserId]);
+assertTrue((int)($defGuestRow['can_order_for_guests'] ?? 0) === 1, 'New employees default to can_order_for_guests = 1');
+
 // Cleanup test data
 Database::execute("DELETE FROM staff_announcements WHERE announce_date = ?", [$testDate]);
 Database::execute("DELETE FROM whatsapp_jobs WHERE order_id IN (SELECT id FROM orders WHERE order_date = ? OR user_id IN (?, ?, ?, ?, ?))", [$testDate, $empAId, $empBId, $empUnconfId, $empPausedId, $empOptOutId]);

@@ -68,7 +68,7 @@ if ($count === 0) {
 
     $stmt->execute([$adminId, 'System Administrator', password_hash($adminPwd, PASSWORD_DEFAULT), 'admin', 11, 1, 'active', 1]);
     $stmt->execute(['STAFF001', 'Kamal (Tea Staff)', password_hash($demoPwd, PASSWORD_DEFAULT), 'staff', 15, 5, 'active', 0]);
-    $stmt->execute(['EMP001', 'Rahim Uddin', password_hash($demoPwd, PASSWORD_DEFAULT), 'employee', 9, 3, 'active', 0]);
+    $stmt->execute(['EMP001', 'Rahim Uddin', password_hash($demoPwd, PASSWORD_DEFAULT), 'employee', 9, 3, 'active', 1]);
     $stmt->execute(['EMP002', 'Tariqul Islam (Sales Head)', password_hash($demoPwd, PASSWORD_DEFAULT), 'employee', 13, 4, 'active', 1]);
 
     // Seed automatic 2-session Tea defaults for all seeded employees
@@ -240,6 +240,19 @@ foreach ($perfIndexes as [$tblName, $idxName, $idxCols]) {
         $pdo->exec("ALTER TABLE `{$tblName}` ADD INDEX `{$idxName}` ({$idxCols})");
         echo "[migrate] Added index {$idxName} on {$tblName}.\n";
     }
+}
+
+// Default guest order access ON for all employees (schema default + existing employees once)
+$guestColDefault = (string)($pdo->query("SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'can_order_for_guests'")->fetchColumn() ?? '');
+if ($guestColDefault !== '1') {
+    $pdo->exec('ALTER TABLE users MODIFY COLUMN can_order_for_guests TINYINT(1) NOT NULL DEFAULT 1');
+    echo "[migrate] Updated users.can_order_for_guests default to 1.\n";
+}
+$guestAccessMigrated = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'default_all_employees_guest_access_v1_applied'")->fetchColumn();
+if ($guestAccessMigrated !== '1') {
+    $pdo->exec("UPDATE users SET can_order_for_guests = 1 WHERE role IN ('employee', 'admin') AND can_order_for_guests = 0");
+    $pdo->exec("INSERT INTO settings (setting_key, setting_value) VALUES ('default_all_employees_guest_access_v1_applied', '1') ON DUPLICATE KEY UPDATE setting_value = '1'");
+    echo "[migrate] Granted default guest order access to all existing employees.\n";
 }
 
 echo "[migrate] Schema and seed up to date.\n";

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
     room_id INT UNSIGNED NULL,
     cup_image VARCHAR(255) NULL,
     status ENUM('pending', 'active', 'disabled') NOT NULL DEFAULT 'active',
-    can_order_for_guests TINYINT(1) NOT NULL DEFAULT 0,
+    can_order_for_guests TINYINT(1) NOT NULL DEFAULT 1,
     is_paused TINYINT(1) NOT NULL DEFAULT 0,
     show_funny_monkey TINYINT(1) NOT NULL DEFAULT 1,
     monkey_dismissed_date DATE NULL,

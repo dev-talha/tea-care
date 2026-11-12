@@ -73,7 +73,11 @@ class Auth
 
     public static function canOrderForGuests(): bool
     {
-        return self::check();
+        $u = self::user();
+        if (!$u) {
+            return false;
+        }
+        return $u['role'] === 'admin' || (int)($u['can_order_for_guests'] ?? 0) === 1;
     }
 
     public static function login(int $userId): void

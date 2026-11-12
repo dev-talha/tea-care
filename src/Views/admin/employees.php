@@ -48,7 +48,7 @@ $title = __('employees');
         </div>
         <div class="md:col-span-3 lg:col-span-6 flex flex-wrap items-center justify-between gap-3">
             <label class="inline-flex items-center gap-2 text-sm font-medium">
-                <input type="checkbox" name="can_order_for_guests" value="1" class="w-4 h-4 accent-tea-600">
+                <input type="checkbox" name="can_order_for_guests" value="1" checked class="w-4 h-4 accent-tea-600">
                 <span>Allow Guest &amp; Meeting Orders (<code>can_order_for_guests</code>)</span>
             </label>
             <button type="submit" class="btn-primary text-sm">Create Account</button>

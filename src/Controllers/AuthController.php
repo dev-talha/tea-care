@@ -125,10 +125,10 @@ class AuthController
         $status = $requiresApproval ? 'pending' : 'active';
         $hash = password_hash($password, PASSWORD_DEFAULT);
 
-        // Never allow user to pick admin/staff role or guest permission during self-registration
+        // Never allow user to pick admin/staff role during self-registration; grant guest order access by default
         $userId = (int)Database::insert(
             "INSERT INTO users (employee_id, full_name, password_hash, role, department_id, room_id, status, can_order_for_guests, preferred_lang, created_at, updated_at)
-             VALUES (?, ?, ?, 'employee', ?, ?, ?, 0, ?, NOW(), NOW())",
+             VALUES (?, ?, ?, 'employee', ?, ?, ?, 1, ?, NOW(), NOW())",
             [$employeeId, $fullName, $hash, $dept['id'], $room['id'], $status, Lang::current()]
         );
 
