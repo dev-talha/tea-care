@@ -188,7 +188,7 @@ $navUrgentPending = isset($urgentPendingCount)
                 <a href="/staff?tab=urgent" class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-semibold <?= ($activeTab ?? '') === 'urgent' ? 'bg-amberwarm-50 text-amberwarm-600' : 'text-slate-500' ?>">
                     <span class="relative inline-flex items-center justify-center">
                         <i class="ti ti-bolt text-xl"></i>
-                        <span id="nav-urgent-badge" class="<?= $navUrgentPending > 0 ? 'inline-flex' : 'hidden' ?> absolute items-center justify-center h-4 px-1 rounded-full bg-rose-600 text-white font-bold leading-none shadow-sm" style="top:-0.25rem;right:-0.5rem;min-width:1rem;font-size:10px;"><?= $navUrgentPending > 99 ? '99+' : $navUrgentPending ?></span>
+                        <span id="nav-urgent-badge" class="<?= $navUrgentPending > 0 ? 'inline-flex' : 'hidden' ?> absolute items-center justify-center h-4 px-1 rounded-full bg-rose-600 text-white font-bold leading-none shadow-sm" style="top:-0.5rem;right:-0.55rem;min-width:1rem;font-size:10px;"><?= $navUrgentPending > 99 ? '99+' : $navUrgentPending ?></span>
                     </span>
                     <span>Urgent</span>
                 </a>
