@@ -29,9 +29,9 @@ $officeLogo = setting('office_logo', '');
             <p class="text-sm text-slate-500 mt-0.5"><?= e(__('tagline')) ?></p>
         </div>
 
-        <?php require __DIR__ . '/../partials/flash.php'; ?>
         <?= $content ?>
     </main>
+    <?php require __DIR__ . '/../partials/flash.php'; ?>
 
     <footer class="text-center text-xs text-slate-400 py-3">
         TeaCare PWA &bull; Asia/Dhaka

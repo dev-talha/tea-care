@@ -5,7 +5,7 @@ $flashes = Session::getFlashes();
 <style>
 #tc-alert-stack {
     position: fixed;
-    top: 0.75rem;
+    top: max(0.5rem, env(safe-area-inset-top));
     left: 0.75rem;
     right: 0.75rem;
     z-index: 9999;
@@ -17,7 +17,7 @@ $flashes = Session::getFlashes();
 @media (min-width: 640px) {
     #tc-alert-stack {
         left: auto;
-        top: 1.25rem;
+        top: 1rem;
         right: 1.25rem;
         width: 100%;
         max-width: 24rem;

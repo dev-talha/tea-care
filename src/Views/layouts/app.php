@@ -41,6 +41,8 @@ $navUrgentPending = isset($urgentPendingCount)
         <span><?= e(__('offline_error')) ?></span>
     </div>
 
+    <?php require __DIR__ . '/../partials/flash.php'; ?>
+
     <!-- Responsive Top App Bar (Mobile App Bar + Desktop 24" Wide Navigation) -->
     <header class="bg-white/95 backdrop-blur border-b border-tea-100 shadow-[0_1px_8px_rgba(45,106,79,0.06)] sticky top-0 z-40">
         <div class="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between gap-3">
@@ -161,7 +163,6 @@ $navUrgentPending = isset($urgentPendingCount)
     </div>
 
     <main class="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-3.5 md:pt-6 space-y-3.5 md:space-y-6 page-enter">
-        <?php require __DIR__ . '/../partials/flash.php'; ?>
         <?= $content ?>
     </main>
 

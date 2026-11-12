@@ -174,9 +174,9 @@ $navItems = [
             </header>
 
             <main class="p-3 sm:p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-5 sm:space-y-6 page-enter">
-                <?php require __DIR__ . '/../partials/flash.php'; ?>
                 <?= $content ?>
             </main>
+            <?php require __DIR__ . '/../partials/flash.php'; ?>
         </div>
     </div>
     <?php require __DIR__ . '/../partials/cup-modal.php'; ?>

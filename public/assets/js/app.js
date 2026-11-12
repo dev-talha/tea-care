@@ -22,6 +22,8 @@
       stack.setAttribute('aria-live', 'polite');
       stack.setAttribute('aria-label', 'Notifications');
       document.body.appendChild(stack);
+    } else if (stack.parentElement !== document.body) {
+      document.body.appendChild(stack);
     }
     return stack;
   };
