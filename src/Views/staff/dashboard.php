@@ -341,9 +341,9 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                         $totalCups = array_sum(array_map(fn($x) => (int)$x['quantity'], $o['items']));
                     ?>
                     <div class="card p-4 space-y-3 border-2 border-amberwarm-400/60 bg-amberwarm-50/40">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                        <div class="space-y-1">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
                                     <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amberwarm-500 text-white text-[10px] font-extrabold uppercase">
                                         Guest / Meeting &bull; <?= $totalCups ?> Cups
                                     </span>
@@ -353,21 +353,21 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                <h3 class="font-bold text-base text-slate-800 flex items-center gap-1">
-                                    <i class="ti ti-map-pin text-amberwarm-600 shrink-0"></i>
-                                    <span class="truncate"><?= e($o['room_name_snapshot']) ?></span>
-                                </h3>
-                                <div class="text-xs text-slate-600 break-words">
-                                    Requested by <strong><?= e($o['employee_name_snapshot']) ?></strong>
-                                    <?= !empty($o['meeting_title']) ? ' &bull; ' . e($o['meeting_title']) : '' ?>
-                                    <?= !empty($o['guest_count']) ? ' (' . (int)$o['guest_count'] . ' guests)' : '' ?>
+                                <div class="shrink-0 flex flex-col items-end gap-1">
+                                    <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
+                                    <span class="text-[11px] font-medium text-slate-500 inline-flex items-center gap-1">
+                                        <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                    </span>
                                 </div>
                             </div>
-                            <div class="shrink-0 flex flex-col items-end gap-1">
-                                <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
-                                <span class="text-[11px] font-medium text-slate-500 inline-flex items-center gap-1">
-                                    <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
-                                </span>
+                            <h3 class="font-bold text-base text-slate-800 flex items-center gap-1">
+                                <i class="ti ti-map-pin text-amberwarm-600 shrink-0"></i>
+                                <span class="truncate"><?= e($o['room_name_snapshot']) ?></span>
+                            </h3>
+                            <div class="text-xs text-slate-600 break-words">
+                                Requested by <strong><?= e($o['employee_name_snapshot']) ?></strong>
+                                <?= !empty($o['meeting_title']) ? ' &bull; ' . e($o['meeting_title']) : '' ?>
+                                <?= !empty($o['guest_count']) ? ' (' . (int)$o['guest_count'] . ' guests)' : '' ?>
                             </div>
                         </div>
 
