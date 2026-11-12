@@ -199,12 +199,14 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
 
 <!-- Mobile Orders Session Toggle (Morning / Afternoon) shown only on Mobile inside Orders tabs -->
 <?php if ($tab === 'morning' || $tab === 'afternoon'): ?>
-    <div class="md:hidden grid grid-cols-2 gap-1.5 bg-white p-1.5 rounded-2xl border border-stone-200 font-bold">
-        <a href="<?= e($buildTabUrl('morning')) ?>" style="font-size:11px;" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center whitespace-nowrap <?= $tab === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
-            <span>Morning (<?= e($morningLabel) ?>)</span>
+    <div class="md:hidden grid grid-cols-2 gap-1.5 bg-white p-1.5 rounded-2xl border border-stone-200 text-xs font-bold">
+        <a href="<?= e($buildTabUrl('morning')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap <?= $tab === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
+            <i class="ti ti-sun text-sm"></i>
+            <span>Morning</span>
         </a>
-        <a href="<?= e($buildTabUrl('afternoon')) ?>" style="font-size:11px;" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center whitespace-nowrap <?= $tab === 'afternoon' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
-            <span>Afternoon (<?= e($afternoonLabel) ?>)</span>
+        <a href="<?= e($buildTabUrl('afternoon')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap <?= $tab === 'afternoon' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
+            <i class="ti ti-clock text-sm"></i>
+            <span>Afternoon</span>
         </a>
     </div>
 <?php endif; ?>
@@ -215,16 +217,16 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
     <!-- Desktop Tab Switcher (Hidden on Mobile) -->
     <div id="staff-live-tabs" class="hidden md:grid lg:col-span-7 grid-cols-5 gap-1.5 bg-white p-1.5 rounded-2xl border border-stone-200 text-xs font-bold">
         <a href="<?= e($buildTabUrl('skipped')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 min-w-0 <?= ($tab === 'skipped' || $tab === 'home') ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-50' ?>">
-            <i class="ti ti-player-skip-forward text-sm shrink-0"></i>
+            <i class="ti ti-ban text-sm shrink-0"></i>
             <span class="truncate">Skip (<?= (int)$skippedFilteredCount ?>)</span>
         </a>
         <a href="<?= e($buildTabUrl('morning')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 min-w-0 <?= $tab === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-50' ?>">
             <i class="ti ti-sun text-sm shrink-0"></i>
-            <span class="truncate"><?= e($morningLabel) ?></span>
+            <span class="truncate">Morning</span>
         </a>
         <a href="<?= e($buildTabUrl('afternoon')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 min-w-0 <?= $tab === 'afternoon' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-50' ?>">
             <i class="ti ti-clock text-sm shrink-0"></i>
-            <span class="truncate"><?= e($afternoonLabel) ?></span>
+            <span class="truncate">Afternoon</span>
         </a>
         <a href="<?= e($buildTabUrl('urgent')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 min-w-0 <?= $tab === 'urgent' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-50' ?>">
             <i class="ti ti-bolt text-sm shrink-0"></i>
@@ -232,7 +234,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
         </a>
         <a href="<?= e($buildTabUrl('completed')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 min-w-0 <?= $tab === 'completed' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-50' ?>">
             <i class="ti ti-circle-check text-sm shrink-0"></i>
-            <span class="truncate">Done</span>
+            <span class="truncate">Complete</span>
         </a>
     </div>
 

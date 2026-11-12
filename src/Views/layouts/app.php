@@ -62,7 +62,7 @@ $navUrgentPending = isset($urgentPendingCount)
             <nav class="hidden md:flex items-center gap-1 overflow-x-auto">
                 <?php if ($isStaffView): ?>
                     <a href="/staff?tab=skipped" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= in_array(($activeTab ?? ''), ['home', 'skipped'], true) ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-ban text-sm"></i><span>Skip List</span>
+                        <i class="ti ti-ban text-sm"></i><span>Skip</span>
                     </a>
                     <a href="/staff?tab=morning" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
                         <i class="ti ti-sun text-sm"></i><span>Morning</span>
@@ -71,10 +71,10 @@ $navUrgentPending = isset($urgentPendingCount)
                         <i class="ti ti-clock text-sm"></i><span>Afternoon</span>
                     </a>
                     <a href="/staff?tab=urgent" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'urgent' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-bolt text-sm"></i><span>Urgent &amp; Guest</span>
+                        <i class="ti ti-bolt text-sm"></i><span>Urgent</span>
                     </a>
                     <a href="/staff?tab=completed" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'completed' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-                        <i class="ti ti-circle-check text-sm"></i><span>Completed</span>
+                        <i class="ti ti-circle-check text-sm"></i><span>Complete</span>
                     </a>
                     <a href="/staff/settings" class="px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition <?= ($activeTab ?? '') === 'staff_settings' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
                         <i class="ti ti-settings text-sm"></i><span>Settings</span>
@@ -179,7 +179,7 @@ $navUrgentPending = isset($urgentPendingCount)
                 </a>
                 <a href="/staff?tab=skipped" class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-semibold <?= ($activeTab ?? '') === 'skipped' ? 'bg-tea-50 text-tea-700' : 'text-slate-500' ?>">
                     <i class="ti ti-ban text-xl"></i>
-                    <span>Skip List</span>
+                    <span>Skip</span>
                 </a>
                 <a href="/staff?tab=morning" class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-semibold <?= in_array(($activeTab ?? ''), ['morning', 'afternoon'], true) ? 'bg-tea-50 text-tea-700' : 'text-slate-500' ?>">
                     <i class="ti ti-list-details text-xl"></i>
@@ -194,7 +194,7 @@ $navUrgentPending = isset($urgentPendingCount)
                 </a>
                 <a href="/staff?tab=completed" class="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl text-[11px] font-semibold <?= ($activeTab ?? '') === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500' ?>">
                     <i class="ti ti-circle-check text-xl"></i>
-                    <span>Done</span>
+                    <span>Complete</span>
                 </a>
             </div>
         <?php else: ?>
