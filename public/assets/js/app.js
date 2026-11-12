@@ -289,12 +289,21 @@
     let pollTimer = null;
     let unchangedCount = 0;
     let errorCount = 0;
+    let lastPollAt = 0;
+    let lastInteractionAt = Date.now();
     const BASE_POLL_MS = isStaffLive ? 8000 : 15000;
     const MAX_IDLE_MS = isStaffLive ? 20000 : 30000;
 
+    ['pointerdown', 'keydown', 'touchstart'].forEach((evt) => {
+      document.addEventListener(evt, () => { lastInteractionAt = Date.now(); }, { passive: true });
+    });
+
     const getNextPollDelay = () => {
       if (errorCount > 0) {
-        return Math.min(30000, BASE_POLL_MS * Math.pow(2, Math.min(errorCount, 3)));
+        return Math.min(60000, BASE_POLL_MS * Math.pow(2, Math.min(errorCount, 3)));
+      }
+      if (!document.hasFocus() || (Date.now() - lastInteractionAt > 120000)) {
+        return MAX_IDLE_MS;
       }
       if (unchangedCount >= 3) {
         return Math.min(MAX_IDLE_MS, BASE_POLL_MS + (unchangedCount - 2) * 3000);
@@ -378,6 +387,7 @@
       }
 
       syncing = true;
+      lastPollAt = Date.now();
       try {
         if (forceRefresh) {
           await syncHtmlFromCurrentUrl();
@@ -483,15 +493,24 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         unchangedCount = 0;
+        lastInteractionAt = Date.now();
         runLivePoll(false);
       } else if (pollTimer) {
         clearTimeout(pollTimer);
         pollTimer = null;
       }
     });
+    window.addEventListener('focus', () => {
+      unchangedCount = 0;
+      lastInteractionAt = Date.now();
+      if (document.visibilityState === 'visible' && (Date.now() - lastPollAt) >= 3000) {
+        runLivePoll(false);
+      }
+    });
     window.addEventListener('online', () => {
       unchangedCount = 0;
       errorCount = 0;
+      lastInteractionAt = Date.now();
       runLivePoll(false);
     });
   }
