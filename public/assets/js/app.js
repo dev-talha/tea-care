@@ -370,7 +370,7 @@
           if (curReq && nxtReq) {
             curReq.innerHTML = nxtReq.innerHTML;
           } else if (!curReq && nxtReq) {
-            curRoot.appendChild(document.importNode(nxtReq, true));
+            curRoot.prepend(document.importNode(nxtReq, true));
           } else if (curReq && !nxtReq) {
             curReq.remove();
           }

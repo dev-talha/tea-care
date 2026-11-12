@@ -107,7 +107,96 @@ $announcements = $announcements ?? [];
 
 <!-- Main Responsive 24" Desktop Grid / Mobile Single Stack -->
 <div id="employee-live-root" data-employee-live="1" class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-    <!-- Left / Main: Morning & Afternoon Cards Side-by-Side on Tablet/Desktop -->
+    <?php if (!empty($todayRequests)): ?>
+        <!-- First on Mobile (Top) & First Column on Desktop (Left) whenever Live Requests exist -->
+        <aside id="employee-live-requests" class="lg:col-span-4 space-y-4">
+            <section class="space-y-2.5">
+                <h3 class="text-sm font-bold text-slate-700 flex items-center justify-between gap-2">
+                    <span class="inline-flex items-center gap-1.5">
+                        <i class="ti ti-bolt text-amberwarm-600"></i>
+                        <span>Today's Live Requests</span>
+                    </span>
+                    <span class="text-[11px] font-semibold text-emerald-700 inline-flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Live
+                    </span>
+                </h3>
+                <?php foreach ($todayRequests as $req):
+                    $reqStatus = $req['status'];
+                    $estMins = !empty($req['estimated_minutes']) ? (int)$req['estimated_minutes'] : 0;
+                ?>
+                    <div class="card p-3.5 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="text-xs font-bold uppercase tracking-wide inline-flex items-center gap-1 <?= $req['order_type'] === 'guest' ? 'text-amberwarm-600' : 'text-tea-700' ?>">
+                                <i class="ti <?= $req['order_type'] === 'guest' ? 'ti-users' : 'ti-bolt' ?> text-sm"></i>
+                                <span><?= $req['order_type'] === 'guest' ? 'Guest Order' : 'On-Demand' ?> &bull; <?= e(date('g:i A', strtotime($req['created_at']))) ?></span>
+                            </div>
+                            <?php $status = $reqStatus; $estimatedMinutes = $estMins; require __DIR__ . '/../partials/status-badge.php'; ?>
+                        </div>
+                        <div class="text-sm font-semibold text-slate-800 flex flex-wrap items-center gap-1.5">
+                            <span>
+                                <?php foreach ($req['items'] as $idx => $it): ?>
+                                    <?= $idx > 0 ? ', ' : '' ?><?= (int)$it['quantity'] ?>&times; <?= e(badge_beverage($it['beverage'])) ?> (<?= e(badge_sugar($it['sugar'])) ?>)
+                                <?php endforeach; ?>
+                            </span>
+                            <?php if (!empty($req['requested_within'])): ?>
+                                <span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
+                                    <?= e($req['requested_within']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if ($reqStatus === 'almost_done'): ?>
+                            <div class="rounded-xl bg-teal-50 border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 flex items-center gap-1.5">
+                                <i class="ti ti-hourglass-high text-sm shrink-0"></i>
+                                <span>Almost done<?= !empty($req['accepted_by_name']) ? ' (' . e($req['accepted_by_name']) . ')' : '' ?>! Ready in ~<?= $estMins > 0 ? $estMins : 5 ?> min</span>
+                            </div>
+                        <?php elseif (in_array($reqStatus, ['accepted', 'preparing'], true)): ?>
+                            <div class="rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
+                                <i class="ti ti-flame text-sm shrink-0 animate-pulse"></i>
+                                <span><strong><?= e(!empty($req['accepted_by_name']) ? $req['accepted_by_name'] : 'Tea Staff') ?></strong> accepted and is preparing your order...</span>
+                            </div>
+                        <?php elseif ($reqStatus === 'pending'): ?>
+                            <div class="rounded-xl bg-amberwarm-50 border border-amberwarm-400/30 px-3 py-1.5 text-xs font-medium text-amberwarm-600 flex items-center gap-1.5">
+                                <i class="ti ti-clock text-sm shrink-0"></i>
+                                <span>Waiting for Tea Staff to accept...</span>
+                            </div>
+                        <?php elseif ($reqStatus === 'system_cancelled'): ?>
+                            <div class="rounded-xl bg-stone-100 border border-stone-300 px-3 py-1.5 text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                <i class="ti ti-clock-x text-sm shrink-0"></i>
+                                <span>System auto-cancelled after 3 hours without completion.</span>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="text-xs text-slate-500 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-100">
+                            <span class="inline-flex items-center gap-1 min-w-0">
+                                <i class="ti ti-map-pin text-sm shrink-0"></i>
+                                <span class="truncate"><?= e($req['room_name_snapshot']) ?><?= !empty($req['meeting_title']) ? ' — ' . e($req['meeting_title']) : '' ?></span>
+                            </span>
+                            <?php if ($reqStatus === 'pending'): ?>
+                                <form method="post" action="/orders/cancel" data-ajax-action="1" onsubmit="return confirm('Cancel this pending order?');">
+                                    <?= Session::csrfField() ?>
+                                    <input type="hidden" name="order_id" value="<?= (int)$req['id'] ?>">
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 font-bold text-xs hover:bg-rose-100 transition inline-flex items-center gap-1">
+                                        <i class="ti ti-x text-xs"></i>Cancel
+                                    </button>
+                                </form>
+                            <?php elseif (in_array($reqStatus, ['accepted', 'preparing', 'almost_done'], true)): ?>
+                                <form method="post" action="/orders/deliver" data-ajax-action="1">
+                                    <?= Session::csrfField() ?>
+                                    <input type="hidden" name="order_id" value="<?= (int)$req['id'] ?>">
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition inline-flex items-center gap-1 shadow-sm">
+                                        <i class="ti ti-circle-check text-xs"></i>Mark Delivered
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </section>
+        </aside>
+    <?php endif; ?>
+
+    <!-- Morning & Afternoon Session Cards Side-by-Side on Tablet/Desktop -->
     <section id="employee-slots-grid" class="<?= !empty($todayRequests) ? 'lg:col-span-8' : 'lg:col-span-12' ?> grid grid-cols-1 md:grid-cols-2 gap-4">
         <?php foreach ($slotConfigs as $slotKey => $cfg):
             $s = $cfg['data'];
@@ -292,93 +381,4 @@ $announcements = $announcements ?? [];
         </div>
         <?php endforeach; ?>
     </section>
-
-    <?php if (!empty($todayRequests)): ?>
-        <!-- Right Column on 24" Desktop: Live Requests -->
-        <aside id="employee-live-requests" class="lg:col-span-4 space-y-4">
-            <section class="space-y-2.5">
-                <h3 class="text-sm font-bold text-slate-700 flex items-center justify-between gap-2">
-                    <span class="inline-flex items-center gap-1.5">
-                        <i class="ti ti-bolt text-amberwarm-600"></i>
-                        <span>Today's Live Requests</span>
-                    </span>
-                    <span class="text-[11px] font-semibold text-emerald-700 inline-flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>Live
-                    </span>
-                </h3>
-                <?php foreach ($todayRequests as $req):
-                    $reqStatus = $req['status'];
-                    $estMins = !empty($req['estimated_minutes']) ? (int)$req['estimated_minutes'] : 0;
-                ?>
-                    <div class="card p-3.5 space-y-2.5">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="text-xs font-bold uppercase tracking-wide inline-flex items-center gap-1 <?= $req['order_type'] === 'guest' ? 'text-amberwarm-600' : 'text-tea-700' ?>">
-                                <i class="ti <?= $req['order_type'] === 'guest' ? 'ti-users' : 'ti-bolt' ?> text-sm"></i>
-                                <span><?= $req['order_type'] === 'guest' ? 'Guest Order' : 'On-Demand' ?> &bull; <?= e(date('g:i A', strtotime($req['created_at']))) ?></span>
-                            </div>
-                            <?php $status = $reqStatus; $estimatedMinutes = $estMins; require __DIR__ . '/../partials/status-badge.php'; ?>
-                        </div>
-                        <div class="text-sm font-semibold text-slate-800 flex flex-wrap items-center gap-1.5">
-                            <span>
-                                <?php foreach ($req['items'] as $idx => $it): ?>
-                                    <?= $idx > 0 ? ', ' : '' ?><?= (int)$it['quantity'] ?>&times; <?= e(badge_beverage($it['beverage'])) ?> (<?= e(badge_sugar($it['sugar'])) ?>)
-                                <?php endforeach; ?>
-                            </span>
-                            <?php if (!empty($req['requested_within'])): ?>
-                                <span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
-                                    <?= e($req['requested_within']) ?>
-                                </span>
-                            <?php endif; ?>
-                        </div>
-
-                        <?php if ($reqStatus === 'almost_done'): ?>
-                            <div class="rounded-xl bg-teal-50 border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-800 flex items-center gap-1.5">
-                                <i class="ti ti-hourglass-high text-sm shrink-0"></i>
-                                <span>Almost done<?= !empty($req['accepted_by_name']) ? ' (' . e($req['accepted_by_name']) . ')' : '' ?>! Ready in ~<?= $estMins > 0 ? $estMins : 5 ?> min</span>
-                            </div>
-                        <?php elseif (in_array($reqStatus, ['accepted', 'preparing'], true)): ?>
-                            <div class="rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
-                                <i class="ti ti-flame text-sm shrink-0 animate-pulse"></i>
-                                <span><strong><?= e(!empty($req['accepted_by_name']) ? $req['accepted_by_name'] : 'Tea Staff') ?></strong> accepted and is preparing your order...</span>
-                            </div>
-                        <?php elseif ($reqStatus === 'pending'): ?>
-                            <div class="rounded-xl bg-amberwarm-50 border border-amberwarm-400/30 px-3 py-1.5 text-xs font-medium text-amberwarm-600 flex items-center gap-1.5">
-                                <i class="ti ti-clock text-sm shrink-0"></i>
-                                <span>Waiting for Tea Staff to accept...</span>
-                            </div>
-                        <?php elseif ($reqStatus === 'system_cancelled'): ?>
-                            <div class="rounded-xl bg-stone-100 border border-stone-300 px-3 py-1.5 text-xs font-medium text-slate-600 flex items-center gap-1.5">
-                                <i class="ti ti-clock-x text-sm shrink-0"></i>
-                                <span>System auto-cancelled after 3 hours without completion.</span>
-                            </div>
-                        <?php endif; ?>
-
-                        <div class="text-xs text-slate-500 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-100">
-                            <span class="inline-flex items-center gap-1 min-w-0">
-                                <i class="ti ti-map-pin text-sm shrink-0"></i>
-                                <span class="truncate"><?= e($req['room_name_snapshot']) ?><?= !empty($req['meeting_title']) ? ' — ' . e($req['meeting_title']) : '' ?></span>
-                            </span>
-                            <?php if ($reqStatus === 'pending'): ?>
-                                <form method="post" action="/orders/cancel" data-ajax-action="1" onsubmit="return confirm('Cancel this pending order?');">
-                                    <?= Session::csrfField() ?>
-                                    <input type="hidden" name="order_id" value="<?= (int)$req['id'] ?>">
-                                    <button type="submit" class="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 font-bold text-xs hover:bg-rose-100 transition inline-flex items-center gap-1">
-                                        <i class="ti ti-x text-xs"></i>Cancel
-                                    </button>
-                                </form>
-                            <?php elseif (in_array($reqStatus, ['accepted', 'preparing', 'almost_done'], true)): ?>
-                                <form method="post" action="/orders/deliver" data-ajax-action="1">
-                                    <?= Session::csrfField() ?>
-                                    <input type="hidden" name="order_id" value="<?= (int)$req['id'] ?>">
-                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition inline-flex items-center gap-1 shadow-sm">
-                                        <i class="ti ti-circle-check text-xs"></i>Mark Delivered
-                                    </button>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </section>
-        </aside>
-    <?php endif; ?>
 </div>
