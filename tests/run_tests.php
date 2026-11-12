@@ -343,6 +343,7 @@ assertTrue(
 $searchByName = OrderService::searchEmployeesForStaff('Test Emp A');
 $searchById = OrderService::searchEmployeesForStaff('TEST_PAUSED');
 $overviewA = OrderService::getEmployeeTodayOverviewForStaff($empAId, $testDate);
+$overviewAToday = OrderService::getEmployeeTodayOverviewForStaff($empAId, ScheduleService::today());
 $overviewPaused = OrderService::getEmployeeTodayOverviewForStaff($empPausedId, $testDate);
 $overviewOptOut = OrderService::getEmployeeTodayOverviewForStaff($empOptOutId, $testDate);
 assertTrue(
@@ -350,8 +351,10 @@ assertTrue(
     count($searchById) >= 1 &&
     ($overviewA['morning']['status_key'] ?? '') === 'skipped' &&
     ($overviewPaused['morning']['status_key'] ?? '') === 'paused' &&
-    ($overviewOptOut['morning']['status_key'] ?? '') === 'disabled',
-    'Staff employee search & today preference overview resolves skipped, paused, disabled, and active states'
+    ($overviewOptOut['morning']['status_key'] ?? '') === 'disabled' &&
+    is_array($overviewAToday['active_requests'] ?? null) &&
+    count($overviewAToday['active_requests']) >= 1,
+    'Staff employee search & today preference overview resolves skipped, paused, disabled, active states, and active on-demand/meeting orders'
 );
 
 // Cleanup test data

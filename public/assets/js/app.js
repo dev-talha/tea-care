@@ -533,7 +533,7 @@
       empSearchBody.innerHTML = `<div class="divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white p-1">${rows}</div>`;
     };
 
-    const renderSlotCard = (slotData, iconClass) => {
+    const renderSlotCard = (slotData, iconClass, variant) => {
       const hasDrink = Boolean(slotData.beverage_label);
       const isCoffee = slotData.beverage === 'coffee';
       const drinkIcon = isCoffee ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700';
@@ -545,12 +545,18 @@
             : 'Saved Default: Disabled')
         : 'Saved Default: Auto-Default (1× Tea • Normal Sugar)';
 
+      const cardStyle = variant === 'morning'
+        ? 'background:#fffbeb;border-color:#fde68a;'
+        : 'background:#f0f9f4;border-color:#bbf7d0;';
+      const slotIconCls = variant === 'morning' ? 'text-amberwarm-600' : 'text-tea-700';
+      const footerBorderStyle = variant === 'morning' ? 'border-color:#fde68a;' : 'border-color:#bbf7d0;';
+
       return `
-        <div class="rounded-2xl border border-stone-200 bg-stone-50 p-3.5 space-y-2.5 flex flex-col justify-between">
+        <div style="${cardStyle}" class="rounded-2xl border p-3.5 space-y-2.5 flex flex-col justify-between">
           <div class="space-y-2">
             <div class="flex items-center justify-between gap-2">
               <div class="inline-flex items-center gap-1.5 min-w-0">
-                <i class="ti ${iconClass} text-base text-tea-700 shrink-0"></i>
+                <i class="ti ${iconClass} text-base ${slotIconCls} shrink-0"></i>
                 <span class="font-extrabold text-sm text-slate-800 truncate">${escHtml(slotData.slot_label)}</span>
                 ${slotData.service_time ? `<span class="text-[11px] text-slate-500 font-semibold shrink-0">(${escHtml(slotData.service_time)})</span>` : ''}
               </div>
@@ -572,7 +578,52 @@
             `}
           </div>
 
-          <div class="text-[11px] text-slate-500 font-medium pt-1 border-t border-stone-200">${savedText}</div>
+          <div style="${footerBorderStyle}" class="text-[11px] text-slate-600 font-medium pt-1.5 border-t">${savedText}</div>
+        </div>`;
+    };
+
+    const renderActiveRequests = (requests) => {
+      if (!requests || requests.length === 0) return '';
+      const cards = requests.map((req) => {
+        const isGuest = req.order_type === 'guest';
+        const typeCls = isGuest ? 'bg-tea-100 text-tea-800 border-tea-200' : 'bg-amberwarm-100 text-amberwarm-700 border-amberwarm-200';
+        const itemsHtml = (req.items || []).map((it) => {
+          const ic = it.beverage === 'coffee' ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700';
+          return `<div class="text-xs font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
+            <i class="ti ${ic} shrink-0"></i>
+            <span>${Number(it.quantity || 1)}&times; ${escHtml(it.beverage_label)} &bull; ${escHtml(it.sugar_label || 'Normal Sugar')}</span>
+            ${it.note ? `<span class="text-[11px] font-medium text-slate-500">("${escHtml(it.note)}")</span>` : ''}
+          </div>`;
+        }).join('');
+        const metaParts = [];
+        if (req.meeting_title) metaParts.push(escHtml(req.meeting_title));
+        if (req.guest_count) metaParts.push(`${Number(req.guest_count)} guests`);
+        if (req.requested_within) metaParts.push(escHtml(req.requested_within));
+        if (req.created_time) metaParts.push(escHtml(req.created_time));
+
+        return `
+          <div class="rounded-xl border border-stone-200 bg-white p-3 space-y-1.5">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-2 py-0.5 rounded-lg border text-[11px] font-bold ${typeCls}">${escHtml(req.type_label)}</span>
+                <span class="px-2 py-0.5 rounded-lg bg-stone-100 text-slate-700 text-[11px] font-bold">${escHtml(req.status_label)}</span>
+              </div>
+              ${metaParts.length > 0 ? `<span class="text-[11px] font-semibold text-slate-500">${metaParts.join(' &bull; ')}</span>` : ''}
+            </div>
+            <div class="space-y-1">${itemsHtml}</div>
+            ${req.note ? `<div class="text-[11px] text-slate-500 break-words">"${escHtml(req.note)}"</div>` : ''}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="rounded-2xl border border-amberwarm-400/40 bg-amberwarm-50 p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-amberwarm-700">
+              <i class="ti ti-bolt text-sm"></i>
+              <span>Active On-Demand &amp; Meeting Orders (${requests.length})</span>
+            </div>
+          </div>
+          <div class="space-y-2">${cards}</div>
         </div>`;
     };
 
@@ -616,9 +667,11 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            ${renderSlotCard(emp.morning, 'ti-sun')}
-            ${renderSlotCard(emp.afternoon, 'ti-clock')}
+            ${renderSlotCard(emp.morning, 'ti-sun', 'morning')}
+            ${renderSlotCard(emp.afternoon, 'ti-clock', 'afternoon')}
           </div>
+
+          ${renderActiveRequests(emp.active_requests)}
         </div>`;
     };
 

@@ -1409,6 +1409,48 @@ class OrderService
             ]);
         };
 
+        $activeReqRows = Database::fetchAll(
+            "SELECT id, order_type, status, meeting_title, guest_count, requested_within, note, created_at
+             FROM orders
+             WHERE user_id = ? AND order_date = ? AND order_type IN ('on_demand', 'guest')
+               AND status IN ('pending', 'accepted', 'preparing', 'almost_done')
+             ORDER BY FIELD(status, 'pending', 'accepted', 'preparing', 'almost_done'), created_at ASC",
+            [$userId, $date]
+        );
+        $activeReqRows = self::getOrdersWithItems($activeReqRows);
+        $activeRequests = [];
+        foreach ($activeReqRows as $req) {
+            $reqStatusLabel = match ((string)$req['status']) {
+                'accepted'    => 'Accepted',
+                'preparing'   => 'Preparing',
+                'almost_done' => 'Almost Done',
+                default       => 'Pending',
+            };
+            $itemsOut = [];
+            foreach ($req['items'] ?? [] as $it) {
+                $itemsOut[] = [
+                    'beverage'       => (string)$it['beverage'],
+                    'beverage_label' => badge_beverage((string)$it['beverage']),
+                    'sugar_label'    => badge_sugar((string)($it['sugar'] ?: 'normal')),
+                    'quantity'       => max(1, (int)$it['quantity']),
+                    'note'           => (string)($it['note'] ?? ''),
+                ];
+            }
+            $activeRequests[] = [
+                'id'               => (int)$req['id'],
+                'order_type'       => (string)$req['order_type'],
+                'type_label'       => $req['order_type'] === 'guest' ? 'Guest / Meeting' : 'On-Demand',
+                'status'           => (string)$req['status'],
+                'status_label'     => $reqStatusLabel,
+                'meeting_title'    => (string)($req['meeting_title'] ?? ''),
+                'guest_count'      => $req['guest_count'] !== null ? (int)$req['guest_count'] : null,
+                'requested_within' => (string)($req['requested_within'] ?? ''),
+                'note'             => (string)($req['note'] ?? ''),
+                'created_time'     => !empty($req['created_at']) ? date('g:i A', strtotime((string)$req['created_at'])) : '',
+                'items'            => $itemsOut,
+            ];
+        }
+
         return [
             'id'              => (int)$user['id'],
             'employee_id'     => (string)$user['employee_id'],
@@ -1421,6 +1463,7 @@ class OrderService
             'today_date'      => $date,
             'morning'         => $resolveSlot('morning'),
             'afternoon'       => $resolveSlot('afternoon'),
+            'active_requests' => $activeRequests,
         ];
     }
 }
