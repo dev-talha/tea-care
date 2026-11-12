@@ -68,6 +68,8 @@ $router->get('/staff/settings', [StaffController::class, 'settings']);
 $router->get('/staff/notifications', [StaffController::class, 'settings']);
 $router->post('/staff/notifications/read', [StaffController::class, 'markNotificationsRead']);
 $router->get('/staff/poll', [StaffController::class, 'poll']);
+$router->get('/staff/employee-search', [StaffController::class, 'searchEmployees']);
+$router->get('/staff/employee-details', [StaffController::class, 'employeeDetails']);
 
 // Push API
 $router->get('/api/push/vapid-key', [PushController::class, 'vapidKey']);

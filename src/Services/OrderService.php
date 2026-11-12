@@ -1204,4 +1204,223 @@ class OrderService
         }
         return $orders;
     }
+
+    public static function searchEmployeesForStaff(string $query, int $limit = 15): array
+    {
+        $limit = max(1, min(30, $limit));
+        $q = trim($query);
+        $where = ["u.status = 'active'", "u.role IN ('employee', 'admin')"];
+        $params = [];
+
+        if ($q !== '') {
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q);
+            $like = '%' . $escaped . '%';
+            $where[] = "(u.full_name LIKE ? OR u.employee_id LIKE ?)";
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $rows = Database::fetchAll(
+            "SELECT u.id, u.employee_id, u.full_name, u.role, u.is_paused, u.cup_image,
+                    d.name AS department_name, r.name AS room_name
+             FROM users u
+             LEFT JOIN departments d ON d.id = u.department_id
+             LEFT JOIN rooms r ON r.id = u.room_id
+             WHERE " . implode(' AND ', $where) . "
+             ORDER BY u.full_name ASC
+             LIMIT {$limit}",
+            $params
+        );
+
+        foreach ($rows as &$row) {
+            $row['id'] = (int)$row['id'];
+            $row['is_paused'] = (int)$row['is_paused'];
+            $row['department_name'] = $row['department_name'] ?: 'Unassigned';
+            $row['room_name'] = $row['room_name'] ?: 'Unassigned';
+            $row['cup_url'] = cup_image_url($row['cup_image'] ?? null, $row['id']);
+        }
+        return $rows;
+    }
+
+    public static function getEmployeeTodayOverviewForStaff(int $userId, string $date): ?array
+    {
+        $user = Database::fetchOne(
+            "SELECT u.id, u.employee_id, u.full_name, u.role, u.is_paused, u.cup_image,
+                    d.name AS department_name, r.name AS room_name
+             FROM users u
+             LEFT JOIN departments d ON d.id = u.department_id
+             LEFT JOIN rooms r ON r.id = u.room_id
+             WHERE u.id = ? AND u.status = 'active' AND u.role IN ('employee', 'admin')
+             LIMIT 1",
+            [$userId]
+        );
+        if (!$user) {
+            return null;
+        }
+
+        $defaults = Database::fetchAll(
+            "SELECT slot_key, enabled, beverage, sugar, quantity, note FROM default_preferences WHERE user_id = ?",
+            [$userId]
+        );
+        $defaultsBySlot = [];
+        foreach ($defaults as $dp) {
+            $defaultsBySlot[$dp['slot_key']] = $dp;
+        }
+
+        $overrides = Database::fetchAll(
+            "SELECT slot_key, override_type, beverage, sugar, quantity, note FROM daily_overrides WHERE user_id = ? AND service_date = ?",
+            [$userId, $date]
+        );
+        $overridesBySlot = [];
+        foreach ($overrides as $ov) {
+            $overridesBySlot[$ov['slot_key']] = $ov;
+        }
+
+        $regularOrders = Database::fetchAll(
+            "SELECT o.id, o.slot_key, o.status, oi.beverage, oi.sugar, oi.quantity, oi.note
+             FROM orders o
+             INNER JOIN order_items oi ON oi.order_id = o.id
+             WHERE o.user_id = ? AND o.order_date = ? AND o.order_type = 'regular'
+             ORDER BY o.id DESC",
+            [$userId, $date]
+        );
+        $ordersBySlot = [];
+        foreach ($regularOrders as $ord) {
+            if (!isset($ordersBySlot[$ord['slot_key']])) {
+                $ordersBySlot[$ord['slot_key']] = $ord;
+            }
+        }
+
+        $dayStatus = ScheduleService::getDayStatus($date);
+        $isPaused = (int)$user['is_paused'] === 1;
+
+        $resolveSlot = static function (string $slotKey) use ($user, $defaultsBySlot, $overridesBySlot, $ordersBySlot, $dayStatus, $isPaused): array {
+            $slot = ScheduleService::getSlot($slotKey);
+            $dp = $defaultsBySlot[$slotKey] ?? null;
+            $ov = $overridesBySlot[$slotKey] ?? null;
+            $ord = $ordersBySlot[$slotKey] ?? null;
+
+            $savedDefault = null;
+            if ($dp !== null) {
+                $savedDefault = [
+                    'enabled'        => (int)$dp['enabled'] === 1,
+                    'beverage_label' => !empty($dp['beverage']) ? badge_beverage((string)$dp['beverage']) : null,
+                    'sugar_label'    => !empty($dp['sugar']) ? badge_sugar((string)$dp['sugar']) : null,
+                    'quantity'       => max(1, (int)$dp['quantity']),
+                    'note'           => (string)($dp['note'] ?? ''),
+                ];
+            }
+
+            $base = [
+                'slot_key'      => $slotKey,
+                'slot_label'    => $slot['label_en'] ?? ucfirst($slotKey),
+                'service_time'  => $slot && !empty($slot['service_time']) ? format_time_12($slot['service_time']) : '',
+                'day_open'      => (bool)($dayStatus['is_open'] ?? true),
+                'slot_active'   => $slot ? ((int)$slot['is_active'] === 1) : true,
+                'beverage'      => null,
+                'beverage_label'=> null,
+                'sugar_label'   => null,
+                'quantity'      => null,
+                'note'          => '',
+                'saved_default' => $savedDefault,
+            ];
+
+            if ($ord !== null) {
+                $st = (string)$ord['status'];
+                $statusLabel = match ($st) {
+                    'delivered'        => 'Delivered',
+                    'cancelled'        => 'Cancelled',
+                    'system_cancelled' => 'Auto Cancelled',
+                    'preparing'        => 'Preparing',
+                    'almost_done'      => 'Almost Done',
+                    'accepted'         => 'Accepted',
+                    default            => 'Ordered (Pending)',
+                };
+                return array_merge($base, [
+                    'status_key'     => $st === 'delivered' ? 'delivered' : (in_array($st, ['cancelled', 'system_cancelled'], true) ? $st : 'ordered'),
+                    'status_label'   => $statusLabel,
+                    'beverage'       => $ord['beverage'],
+                    'beverage_label' => badge_beverage((string)$ord['beverage']),
+                    'sugar_label'    => badge_sugar((string)$ord['sugar']),
+                    'quantity'       => max(1, (int)$ord['quantity']),
+                    'note'           => (string)($ord['note'] ?? ''),
+                ]);
+            }
+
+            if ($isPaused) {
+                return array_merge($base, [
+                    'status_key'   => 'paused',
+                    'status_label' => 'Paused / Away',
+                ]);
+            }
+
+            if ($ov !== null && $ov['override_type'] === 'skip') {
+                return array_merge($base, [
+                    'status_key'   => 'skipped',
+                    'status_label' => 'Skipped Today',
+                ]);
+            }
+
+            if ($ov !== null && $ov['override_type'] === 'custom' && !empty($ov['beverage'])) {
+                return array_merge($base, [
+                    'status_key'     => 'custom',
+                    'status_label'   => 'Today Override',
+                    'beverage'       => $ov['beverage'],
+                    'beverage_label' => badge_beverage((string)$ov['beverage']),
+                    'sugar_label'    => badge_sugar((string)($ov['sugar'] ?: 'normal')),
+                    'quantity'       => max(1, (int)$ov['quantity']),
+                    'note'           => (string)($ov['note'] ?? ''),
+                ]);
+            }
+
+            if ($dp !== null) {
+                if ((int)$dp['enabled'] !== 1 || empty($dp['beverage'])) {
+                    return array_merge($base, [
+                        'status_key'   => 'disabled',
+                        'status_label' => 'Disabled in Defaults',
+                    ]);
+                }
+                return array_merge($base, [
+                    'status_key'     => 'default',
+                    'status_label'   => 'Default Preference',
+                    'beverage'       => $dp['beverage'],
+                    'beverage_label' => badge_beverage((string)$dp['beverage']),
+                    'sugar_label'    => badge_sugar((string)($dp['sugar'] ?: 'normal')),
+                    'quantity'       => max(1, (int)$dp['quantity']),
+                    'note'           => (string)($dp['note'] ?? ''),
+                ]);
+            }
+
+            if ($user['role'] === 'employee') {
+                return array_merge($base, [
+                    'status_key'     => 'auto_default',
+                    'status_label'   => 'Auto-Default',
+                    'beverage'       => 'tea',
+                    'beverage_label' => badge_beverage('tea'),
+                    'sugar_label'    => badge_sugar('normal'),
+                    'quantity'       => 1,
+                    'note'           => '',
+                ]);
+            }
+
+            return array_merge($base, [
+                'status_key'   => 'disabled',
+                'status_label' => 'Not Configured',
+            ]);
+        };
+
+        return [
+            'id'              => (int)$user['id'],
+            'employee_id'     => (string)$user['employee_id'],
+            'full_name'       => (string)$user['full_name'],
+            'role'            => (string)$user['role'],
+            'is_paused'       => $isPaused,
+            'department_name' => $user['department_name'] ?: 'Unassigned',
+            'room_name'       => $user['room_name'] ?: 'Unassigned',
+            'cup_url'         => cup_image_url($user['cup_image'] ?? null, (int)$user['id']),
+            'today_date'      => $date,
+            'morning'         => $resolveSlot('morning'),
+            'afternoon'       => $resolveSlot('afternoon'),
+        ];
+    }
 }

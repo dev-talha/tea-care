@@ -341,13 +341,15 @@
     }
   });
 
-  // Personal Cup Lightbox Popup Modal + Staff Room Details Modal
+  // Personal Cup Lightbox Popup Modal + Staff Room Details Modal + Staff Employee Search Modal
   const cupModal = document.getElementById('cup-photo-modal');
   const roomModal = document.getElementById('staff-room-modal');
+  const empSearchModal = document.getElementById('staff-emp-search-modal');
   const syncBodyScrollLock = () => {
     const cupOpen = cupModal && !cupModal.classList.contains('hidden');
     const roomOpen = roomModal && !roomModal.classList.contains('hidden');
-    document.body.style.overflow = (cupOpen || roomOpen) ? 'hidden' : '';
+    const empOpen = empSearchModal && !empSearchModal.classList.contains('hidden');
+    document.body.style.overflow = (cupOpen || roomOpen || empOpen) ? 'hidden' : '';
   };
   const closeCupModal = () => {
     if (!cupModal) return;
@@ -358,6 +360,11 @@
     if (!roomModal) return;
     roomModal.classList.add('hidden');
     roomModal.removeAttribute('data-room-key');
+    syncBodyScrollLock();
+  };
+  const closeEmpSearchModal = () => {
+    if (!empSearchModal) return;
+    empSearchModal.classList.add('hidden');
     syncBodyScrollLock();
   };
 
@@ -443,10 +450,246 @@
     if (e.key !== 'Escape') return;
     if (cupModal && !cupModal.classList.contains('hidden')) {
       closeCupModal();
+    } else if (empSearchModal && !empSearchModal.classList.contains('hidden')) {
+      closeEmpSearchModal();
     } else if (roomModal && !roomModal.classList.contains('hidden')) {
       closeRoomModal();
     }
   });
+
+  // Staff Top Bar Employee Search & Today Preference Lookup
+  const empSearchBtn = document.getElementById('staff-emp-search-btn');
+  const empSearchInput = document.getElementById('staff-emp-search-input');
+  const empSearchClear = document.getElementById('staff-emp-search-clear');
+  const empSearchBody = document.getElementById('staff-emp-search-body');
+
+  if (empSearchBtn && empSearchModal && empSearchInput && empSearchBody) {
+    let empSearchTimer = null;
+    let empSearchAbort = null;
+    let empDetailAbort = null;
+    let lastEmpQuery = '';
+    let lastEmpList = [];
+
+    const escHtml = (val) => String(val ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const statusBadgeClass = (key) => {
+      switch (key) {
+        case 'delivered': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'ordered': return 'bg-tea-100 text-tea-800 border-tea-200';
+        case 'custom': return 'bg-amberwarm-100 text-amberwarm-700 border-amberwarm-200';
+        case 'skipped':
+        case 'paused':
+        case 'cancelled': return 'bg-rose-50 text-rose-700 border-rose-200';
+        case 'disabled':
+        case 'system_cancelled': return 'bg-stone-100 text-slate-600 border-stone-200';
+        default: return 'bg-tea-50 text-tea-700 border-tea-200';
+      }
+    };
+
+    const renderEmpList = (employees, query) => {
+      if (!employees || employees.length === 0) {
+        empSearchBody.innerHTML = `<div class="rounded-xl border border-stone-200 bg-stone-50 p-6 text-center text-xs text-slate-500">No employees found${query ? ` matching "<strong>${escHtml(query)}</strong>"` : ''}.</div>`;
+        return;
+      }
+
+      const rows = employees.map((emp) => {
+        const pausedTag = emp.is_paused ? '<span class="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold shrink-0">Paused</span>' : '';
+        return `
+          <button type="button" data-emp-detail-id="${emp.id}" class="w-full text-left py-2.5 px-3 flex items-center justify-between gap-2.5 hover:bg-cream-50 transition rounded-xl">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <img src="${escHtml(emp.cup_url)}" alt="" class="w-10 h-10 rounded-xl object-cover border border-stone-200 bg-stone-50 shrink-0">
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-sm text-slate-800 truncate">${escHtml(emp.full_name)} <span class="text-xs font-semibold text-slate-400">(${escHtml(emp.employee_id)})</span></div>
+                <div class="text-[11px] text-slate-500 truncate">${escHtml(emp.room_name)} &bull; ${escHtml(emp.department_name)}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${pausedTag}
+              <i class="ti ti-chevron-right text-slate-400 text-base"></i>
+            </div>
+          </button>`;
+      }).join('');
+
+      empSearchBody.innerHTML = `<div class="divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white p-1">${rows}</div>`;
+    };
+
+    const renderSlotCard = (slotData, iconClass) => {
+      const hasDrink = Boolean(slotData.beverage_label);
+      const isCoffee = slotData.beverage === 'coffee';
+      const drinkIcon = isCoffee ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700';
+      const badgeCls = statusBadgeClass(slotData.status_key);
+      const saved = slotData.saved_default;
+      const savedText = saved
+        ? (saved.enabled && saved.beverage_label
+            ? `Saved Default: ${saved.quantity}× ${escHtml(saved.beverage_label)} • ${escHtml(saved.sugar_label || '')}`
+            : 'Saved Default: Disabled')
+        : 'Saved Default: Auto-Default (1× Tea • Normal Sugar)';
+
+      return `
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 p-3.5 space-y-2.5 flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="inline-flex items-center gap-1.5 min-w-0">
+                <i class="ti ${iconClass} text-base text-tea-700 shrink-0"></i>
+                <span class="font-extrabold text-sm text-slate-800 truncate">${escHtml(slotData.slot_label)}</span>
+                ${slotData.service_time ? `<span class="text-[11px] text-slate-500 font-semibold shrink-0">(${escHtml(slotData.service_time)})</span>` : ''}
+              </div>
+              <span class="px-2 py-0.5 rounded-lg border text-[11px] font-bold shrink-0 ${badgeCls}">${escHtml(slotData.status_label)}</span>
+            </div>
+
+            ${hasDrink ? `
+              <div class="rounded-xl bg-white border border-stone-200 p-2.5 space-y-1">
+                <div class="text-sm font-extrabold text-tea-800 flex items-center gap-1.5 flex-wrap">
+                  <i class="ti ${drinkIcon} text-base shrink-0"></i>
+                  <span>${Number(slotData.quantity || 1)}&times; ${escHtml(slotData.beverage_label)} &bull; ${escHtml(slotData.sugar_label || 'Normal Sugar')}</span>
+                </div>
+                ${slotData.note ? `<div class="text-xs text-slate-600 break-words">"${escHtml(slotData.note)}"</div>` : ''}
+              </div>
+            ` : `
+              <div class="rounded-xl bg-white border border-stone-200 p-2.5 text-xs font-semibold text-slate-500">
+                No drink scheduled for this session.
+              </div>
+            `}
+          </div>
+
+          <div class="text-[11px] text-slate-500 font-medium pt-1 border-t border-stone-200">${savedText}</div>
+        </div>`;
+    };
+
+    const renderEmpDetail = (emp) => {
+      const drinkSummary = [
+        emp.morning?.beverage_label ? `AM: ${emp.morning.quantity}× ${emp.morning.beverage_label}` : `AM: ${emp.morning?.status_label || '-'}`,
+        emp.afternoon?.beverage_label ? `PM: ${emp.afternoon.quantity}× ${emp.afternoon.beverage_label}` : `PM: ${emp.afternoon?.status_label || '-'}`,
+      ].join(' | ');
+
+      empSearchBody.innerHTML = `
+        <div class="space-y-3.5">
+          <div class="flex items-center justify-between gap-2">
+            <button type="button" id="staff-emp-back-btn" class="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5">
+              <i class="ti ti-arrow-left text-sm"></i><span>Back to Results</span>
+            </button>
+            <span class="text-[11px] font-semibold text-slate-500">Today: ${escHtml(emp.today_date)}</span>
+          </div>
+
+          <div class="rounded-2xl border border-stone-200 bg-white p-3.5 flex items-center gap-3">
+            <button
+              type="button"
+              data-cup-preview="1"
+              data-cup-src="${escHtml(emp.cup_url)}"
+              data-cup-name="${escHtml(emp.full_name)}"
+              data-cup-empid="${escHtml(emp.employee_id)}"
+              data-cup-dept="${escHtml(emp.department_name)}"
+              data-cup-room="${escHtml(emp.room_name)}"
+              data-cup-drink="${escHtml(drinkSummary)}"
+              class="relative shrink-0 rounded-xl overflow-hidden border border-stone-200 bg-stone-50"
+              title="Tap to zoom cup photo">
+              <img src="${escHtml(emp.cup_url)}" alt="" class="w-14 h-14 object-cover">
+            </button>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-extrabold text-base text-slate-800 truncate">${escHtml(emp.full_name)}</span>
+                <span class="px-2 py-0.5 rounded-lg bg-stone-100 text-slate-700 text-[11px] font-bold">${escHtml(emp.employee_id)}</span>
+                ${emp.is_paused ? '<span class="px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">Paused / Away</span>' : ''}
+              </div>
+              <div class="text-xs font-semibold text-slate-500 mt-0.5 truncate">${escHtml(emp.room_name)} &bull; ${escHtml(emp.department_name)}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${renderSlotCard(emp.morning, 'ti-sun')}
+            ${renderSlotCard(emp.afternoon, 'ti-clock')}
+          </div>
+        </div>`;
+    };
+
+    const runEmpSearch = async (query) => {
+      if (empSearchAbort) empSearchAbort.abort();
+      empSearchAbort = new AbortController();
+      lastEmpQuery = query;
+      empSearchBody.innerHTML = '<div class="text-center text-xs text-slate-500 py-6">Searching...</div>';
+      try {
+        const res = await fetch('/staff/employee-search?q=' + encodeURIComponent(query), {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          signal: empSearchAbort.signal
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        lastEmpList = data.employees || [];
+        renderEmpList(lastEmpList, query);
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        empSearchBody.innerHTML = '<div class="text-center text-xs text-rose-600 py-6">Failed to load employees.</div>';
+      }
+    };
+
+    const loadEmpDetails = async (userId) => {
+      if (empDetailAbort) empDetailAbort.abort();
+      empDetailAbort = new AbortController();
+      empSearchBody.innerHTML = '<div class="text-center text-xs text-slate-500 py-6">Loading today\'s preferences...</div>';
+      try {
+        const res = await fetch('/staff/employee-details?user_id=' + encodeURIComponent(String(userId)), {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          signal: empDetailAbort.signal
+        });
+        if (!res.ok) {
+          empSearchBody.innerHTML = '<div class="text-center text-xs text-rose-600 py-6">Employee details not found.</div>';
+          return;
+        }
+        const data = await res.json();
+        if (data.employee) renderEmpDetail(data.employee);
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        empSearchBody.innerHTML = '<div class="text-center text-xs text-rose-600 py-6">Failed to load employee details.</div>';
+      }
+    };
+
+    empSearchBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      empSearchModal.classList.remove('hidden');
+      syncBodyScrollLock();
+      runEmpSearch(empSearchInput.value.trim());
+      window.setTimeout(() => empSearchInput.focus(), 40);
+    });
+
+    empSearchInput.addEventListener('input', () => {
+      const val = empSearchInput.value.trim();
+      if (empSearchClear) empSearchClear.classList.toggle('hidden', val === '');
+      if (empSearchTimer) window.clearTimeout(empSearchTimer);
+      empSearchTimer = window.setTimeout(() => runEmpSearch(val), 180);
+    });
+
+    if (empSearchClear) {
+      empSearchClear.addEventListener('click', () => {
+        empSearchInput.value = '';
+        empSearchClear.classList.add('hidden');
+        runEmpSearch('');
+        empSearchInput.focus();
+      });
+    }
+
+    empSearchModal.addEventListener('click', (e) => {
+      if (e.target.closest('[data-emp-modal-close]') || e.target === empSearchModal) {
+        closeEmpSearchModal();
+        return;
+      }
+      const rowBtn = e.target.closest('[data-emp-detail-id]');
+      if (rowBtn) {
+        const uid = Number(rowBtn.getAttribute('data-emp-detail-id') || '0');
+        if (uid > 0) loadEmpDetails(uid);
+        return;
+      }
+      if (e.target.closest('#staff-emp-back-btn')) {
+        renderEmpList(lastEmpList, lastEmpQuery);
+      }
+    });
+  }
 
   // Real-time AJAX Status & New Order Sync + Instant Action Forms
   const isStaffLive = Boolean(document.getElementById('staff-live-panel'));

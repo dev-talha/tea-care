@@ -329,4 +329,26 @@ class StaffController
             'changed'       => $clientFp === null || $clientFp !== $fingerprint,
         ]);
     }
+
+    public function searchEmployees(): void
+    {
+        Auth::requireRole(['staff', 'admin']);
+        $q = trim((string)Request::get('q', ''));
+        $employees = OrderService::searchEmployeesForStaff($q, 18);
+        Response::json(['ok' => true, 'employees' => $employees]);
+    }
+
+    public function employeeDetails(): void
+    {
+        Auth::requireRole(['staff', 'admin']);
+        $userId = (int)Request::get('user_id', 0);
+        if ($userId <= 0) {
+            Response::json(['ok' => false, 'error' => 'Invalid employee'], 400);
+        }
+        $employee = OrderService::getEmployeeTodayOverviewForStaff($userId, ScheduleService::todayDate());
+        if (!$employee) {
+            Response::json(['ok' => false, 'error' => 'Employee not found'], 404);
+        }
+        Response::json(['ok' => true, 'employee' => $employee]);
+    }
 }

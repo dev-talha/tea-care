@@ -47,7 +47,7 @@ $navUrgentPending = isset($urgentPendingCount)
     <header class="bg-white/95 backdrop-blur border-b border-tea-100 shadow-[0_1px_8px_rgba(45,106,79,0.06)] sticky top-0 z-40">
         <div class="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between gap-3">
             <!-- Brand -->
-            <a href="<?= $isStaffView ? '/staff' : '/today' ?>" class="flex items-center gap-2.5 min-w-0 shrink-0">
+            <a href="<?= $isStaffView ? '/staff' : '/today' ?>" class="flex items-center gap-2 min-w-0">
                 <?php if ($officeLogo !== ''): ?>
                     <img src="/media/logo?v=<?= e(substr(md5($officeLogo), 0, 8)) ?>" alt="Logo" class="h-8 w-8 md:h-9 md:w-9 rounded-lg object-contain">
                 <?php else: ?>
@@ -100,10 +100,13 @@ $navUrgentPending = isset($urgentPendingCount)
                 <?php endif; ?>
                 <?php if ($role === 'staff' || $role === 'admin'): ?>
                     <?php if ($isStaffView): ?>
-                        <a href="/today" class="px-2.5 py-1.5 rounded-lg bg-cream-100 text-slate-700 text-xs font-semibold border border-stone-200 inline-flex items-center gap-1">
+                        <button type="button" id="staff-emp-search-btn" title="Search Employee" aria-label="Search Employee" class="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-tea-50 text-slate-700 hover:text-tea-700 border border-stone-200 text-xs font-semibold inline-flex items-center gap-1.5 transition shrink-0">
+                            <i class="ti ti-search text-base"></i><span class="hidden lg:inline">Search</span>
+                        </button>
+                        <a href="/today" class="px-2.5 py-1.5 rounded-lg bg-cream-100 text-slate-700 text-xs font-semibold border border-stone-200 inline-flex items-center gap-1 shrink-0">
                             <i class="ti ti-mug text-sm"></i><span>My Tea</span>
                         </a>
-                        <a href="/staff/settings" title="Staff Settings" aria-label="Staff Settings" class="md:hidden px-2.5 py-1.5 rounded-lg <?= ($activeTab ?? '') === 'staff_settings' ? 'bg-tea-600 text-white border-tea-600' : 'bg-stone-100 text-slate-700 border-stone-200' ?> border text-xs font-semibold inline-flex items-center justify-center">
+                        <a href="/staff/settings" title="Staff Settings" aria-label="Staff Settings" class="md:hidden px-2.5 py-1.5 rounded-lg <?= ($activeTab ?? '') === 'staff_settings' ? 'bg-tea-600 text-white border-tea-600' : 'bg-stone-100 text-slate-700 border-stone-200' ?> border text-xs font-semibold inline-flex items-center justify-center shrink-0">
                             <i class="ti ti-settings text-base"></i>
                         </a>
                     <?php else: ?>
@@ -209,6 +212,77 @@ $navUrgentPending = isset($urgentPendingCount)
             </div>
         <?php endif; ?>
     </nav>
+
+    <?php if ($isStaffView): ?>
+        <style>
+        #staff-emp-search-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 62;
+            background: rgba(15, 23, 42, 0.72);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+        }
+        #staff-emp-search-modal.hidden {
+            display: none;
+        }
+        .staff-emp-modal-dialog {
+            background: #fff;
+            border: 1px solid #e7e5e4;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 40rem;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .staff-emp-modal-body {
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        </style>
+        <div id="staff-emp-search-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="staff-emp-modal-title">
+            <div class="staff-emp-modal-dialog">
+                <div class="px-4 py-3 border-b border-stone-100 flex items-center justify-between gap-2 bg-cream-50 shrink-0">
+                    <div class="inline-flex items-center gap-2 min-w-0">
+                        <i class="ti ti-user-search text-lg text-tea-700 shrink-0"></i>
+                        <h3 id="staff-emp-modal-title" class="font-extrabold text-sm md:text-base text-tea-800 truncate">Find Employee Today</h3>
+                    </div>
+                    <button type="button" data-emp-modal-close="1" class="w-9 h-9 rounded-xl bg-white border border-stone-200 text-slate-600 hover:bg-stone-100 flex items-center justify-center shrink-0" aria-label="Close search">
+                        <i class="ti ti-x text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="px-4 py-3 border-b border-stone-100 bg-white shrink-0">
+                    <div class="relative flex items-center">
+                        <i class="ti ti-search text-slate-400 text-base absolute left-3 pointer-events-none"></i>
+                        <input
+                            type="search"
+                            id="staff-emp-search-input"
+                            placeholder="Search by employee name or ID (e.g. Kamal, 7530)..."
+                            autocomplete="off"
+                            style="padding-left: 2.35rem; padding-right: 2.35rem; font-size: 16px;"
+                            class="input-field w-full py-2.5 rounded-xl"
+                        >
+                        <button type="button" id="staff-emp-search-clear" class="hidden absolute right-2.5 w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-stone-100 flex items-center justify-center" aria-label="Clear search">
+                            <i class="ti ti-x text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="staff-emp-search-body" class="p-4 staff-emp-modal-body space-y-3">
+                    <div class="text-center text-xs text-slate-500 py-6">Loading employees...</div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?php require __DIR__ . '/../partials/cup-modal.php'; ?>
     <script src="/assets/js/app.js?v=<?= @filemtime(__DIR__ . '/../../../public/assets/js/app.js') ?: '2' ?>"></script>

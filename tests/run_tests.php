@@ -339,6 +339,21 @@ assertTrue(
     'Staff slot data includes per-room cup/tea/coffee/skip summary and skipped_users list'
 );
 
+// Verify staff employee search & today preference overview (skipped, paused, disabled, default)
+$searchByName = OrderService::searchEmployeesForStaff('Test Emp A');
+$searchById = OrderService::searchEmployeesForStaff('TEST_PAUSED');
+$overviewA = OrderService::getEmployeeTodayOverviewForStaff($empAId, $testDate);
+$overviewPaused = OrderService::getEmployeeTodayOverviewForStaff($empPausedId, $testDate);
+$overviewOptOut = OrderService::getEmployeeTodayOverviewForStaff($empOptOutId, $testDate);
+assertTrue(
+    count($searchByName) >= 1 &&
+    count($searchById) >= 1 &&
+    ($overviewA['morning']['status_key'] ?? '') === 'skipped' &&
+    ($overviewPaused['morning']['status_key'] ?? '') === 'paused' &&
+    ($overviewOptOut['morning']['status_key'] ?? '') === 'disabled',
+    'Staff employee search & today preference overview resolves skipped, paused, disabled, and active states'
+);
+
 // Cleanup test data
 Database::execute("DELETE FROM staff_announcements WHERE announce_date = ?", [$testDate]);
 Database::execute("DELETE FROM whatsapp_jobs WHERE order_id IN (SELECT id FROM orders WHERE order_date = ? OR user_id IN (?, ?, ?, ?, ?))", [$testDate, $empAId, $empBId, $empUnconfId, $empPausedId, $empOptOutId]);
