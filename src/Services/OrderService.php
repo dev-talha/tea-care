@@ -459,11 +459,7 @@ class OrderService
             );
 
             $bevLabel = $beverage === 'coffee' ? 'Coffee' : 'Tea';
-            $sugarLabel = match ($sugar) {
-                'less' => 'Less Sugar',
-                'none' => 'No Sugar',
-                default => 'Normal Sugar',
-            };
+            $sugarLabel = badge_sugar($sugar);
             $deptPart = !empty($user['department_name']) ? ", {$user['department_name']}" : '';
             $notePart = $note !== '' ? ". {$note}" : '';
 
@@ -555,7 +551,7 @@ class OrderService
             $coffeeTotal = 0;
             foreach ($items as $item) {
                 $bev = ($item['beverage'] ?? 'tea') === 'coffee' ? 'coffee' : 'tea';
-                $sug = in_array($item['sugar'] ?? 'normal', ['normal', 'less', 'none'], true) ? $item['sugar'] : 'normal';
+                $sug = in_array($item['sugar'] ?? 'normal', ['normal', 'less', 'extra', 'none'], true) ? $item['sugar'] : 'normal';
                 $qty = max(1, min(100, (int)($item['quantity'] ?? 1)));
 
                 Database::insert(
@@ -586,11 +582,7 @@ class OrderService
             $waItems = [];
             foreach ($items as $it) {
                 $b = ($it['beverage'] ?? 'tea') === 'coffee' ? 'Coffee' : 'Tea';
-                $s = match ($it['sugar'] ?? 'normal') {
-                    'less' => 'Less Sugar',
-                    'none' => 'No Sugar',
-                    default => 'Normal Sugar',
-                };
+                $s = badge_sugar((string)($it['sugar'] ?? 'normal'));
                 $waItems[] = "- " . (int)($it['quantity'] ?? 1) . "x {$b} ({$s})";
             }
             $waLines = [
@@ -967,6 +959,7 @@ class OrderService
             'coffee'       => 0,
             'sugar_normal' => 0,
             'sugar_less'   => 0,
+            'sugar_extra'  => 0,
             'sugar_none'   => 0,
             'pending'      => 0,
             'delivered'    => 0,

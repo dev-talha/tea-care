@@ -66,9 +66,9 @@ $title = __('guest_order_title');
                     <option value="coffee"><?= e(__('coffee')) ?></option>
                 </select>
                 <select name="item_sugar[]" class="input-field flex-1 min-w-[120px] text-sm">
-                    <option value="normal"><?= e(__('sugar_normal')) ?></option>
-                    <option value="less"><?= e(__('sugar_less')) ?></option>
-                    <option value="none"><?= e(__('sugar_none')) ?></option>
+                    <?php foreach (sugar_options() as $sk => $sl): ?>
+                        <option value="<?= e($sk) ?>"><?= e($sl) ?></option>
+                    <?php endforeach; ?>
                 </select>
                 <div class="flex items-center gap-1.5">
                     <button type="button" data-step-delta="-1" class="w-10 h-11 rounded-xl border border-stone-300 bg-white font-bold inline-flex items-center justify-center"><i class="ti ti-minus"></i></button>
@@ -101,9 +101,9 @@ $title = __('guest_order_title');
             <option value="coffee"><?= e(__('coffee')) ?></option>
         </select>
         <select name="item_sugar[]" class="input-field flex-1 min-w-[120px] text-sm">
-            <option value="normal"><?= e(__('sugar_normal')) ?></option>
-            <option value="less"><?= e(__('sugar_less')) ?></option>
-            <option value="none"><?= e(__('sugar_none')) ?></option>
+            <?php foreach (sugar_options() as $sk => $sl): ?>
+                <option value="<?= e($sk) ?>"><?= e($sl) ?></option>
+            <?php endforeach; ?>
         </select>
         <div class="flex items-center gap-1.5">
             <button type="button" data-step-delta="-1" class="w-10 h-11 rounded-xl border border-stone-300 bg-white font-bold inline-flex items-center justify-center"><i class="ti ti-minus"></i></button>

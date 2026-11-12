@@ -302,6 +302,18 @@ assertTrue(
     'Paginator (25/50/100/500) bounds & DB pagination performance indexes active'
 );
 
+// Verify Extra Sugar option persists across default_preferences, daily_overrides & orders
+OrderService::saveDefaultPreference($empAId, 'morning', true, 'tea', 'extra', 1, 'Extra sweet');
+$extraPref = Database::fetchOne("SELECT sugar FROM default_preferences WHERE user_id = ? AND slot_key = 'morning'", [$empAId]);
+$extraGuest = OrderService::createGuestOrder($empA, 6, 'Extra Sugar Test', 1, [['beverage' => 'tea', 'sugar' => 'extra', 'quantity' => 1]], '', 'extra-sug-' . bin2hex(random_bytes(4)));
+$extraGuestItem = Database::fetchOne('SELECT sugar FROM order_items WHERE order_id = ?', [$extraGuest['id']]);
+assertTrue(
+    ($extraPref['sugar'] ?? '') === 'extra' &&
+    ($extraGuestItem['sugar'] ?? '') === 'extra' &&
+    badge_sugar('extra') === 'Extra Sugar',
+    'Extra sugar preference and order item persistence works'
+);
+
 // Cleanup test data
 Database::execute("DELETE FROM staff_announcements WHERE announce_date = ?", [$testDate]);
 Database::execute("DELETE FROM whatsapp_jobs WHERE order_id IN (SELECT id FROM orders WHERE order_date = ? OR user_id IN (?, ?, ?, ?, ?))", [$testDate, $empAId, $empBId, $empUnconfId, $empPausedId, $empOptOutId]);

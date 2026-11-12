@@ -485,6 +485,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
             <div class="flex items-center flex-nowrap gap-1 sm:gap-2 overflow-x-auto text-[10px] sm:text-xs font-semibold text-slate-600 mt-2 whitespace-nowrap">
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">Normal: <?= (int)$sum['sugar_normal'] ?></span>
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">Less: <?= (int)$sum['sugar_less'] ?></span>
+                <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">Extra: <?= (int)($sum['sugar_extra'] ?? 0) ?></span>
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-cream-50 border border-stone-200 shrink-0">No Sugar: <?= (int)$sum['sugar_none'] ?></span>
                 <span class="px-1.5 sm:px-2.5 py-1 rounded-lg bg-tea-50 text-tea-700 font-bold shrink-0">Pending: <?= (int)$sum['pending'] ?> | Done: <?= (int)$sum['delivered'] ?></span>
             </div>

@@ -58,9 +58,20 @@ function badge_sugar(string $sugar): string
 {
     return match ($sugar) {
         'less' => __('sugar_less'),
+        'extra' => __('sugar_extra'),
         'none' => __('sugar_none'),
         default => __('sugar_normal'),
     };
+}
+
+function sugar_options(): array
+{
+    return [
+        'normal' => __('sugar_normal'),
+        'less'   => __('sugar_less'),
+        'extra'  => __('sugar_extra'),
+        'none'   => __('sugar_none'),
+    ];
 }
 
 function staff_short_name(?string $name): string

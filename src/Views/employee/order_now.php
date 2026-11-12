@@ -35,19 +35,13 @@ $title = __('on_demand_title');
 
         <div>
             <span class="label-text">Sugar Preference</span>
-            <div class="grid grid-cols-3 gap-2" data-seg-group>
-                <label class="btn-touch border cursor-pointer text-xs px-2 bg-tea-600 text-white border-tea-600">
-                    <input type="radio" name="sugar" value="normal" class="sr-only" checked>
-                    <?= e(__('sugar_normal')) ?>
-                </label>
-                <label class="btn-touch border cursor-pointer text-xs px-2 bg-white text-slate-700 border-stone-200">
-                    <input type="radio" name="sugar" value="less" class="sr-only">
-                    <?= e(__('sugar_less')) ?>
-                </label>
-                <label class="btn-touch border cursor-pointer text-xs px-2 bg-white text-slate-700 border-stone-200">
-                    <input type="radio" name="sugar" value="none" class="sr-only">
-                    <?= e(__('sugar_none')) ?>
-                </label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-seg-group>
+                <?php foreach (sugar_options() as $sk => $sl): ?>
+                    <label class="btn-touch border cursor-pointer text-xs px-2 <?= $sk === 'normal' ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
+                        <input type="radio" name="sugar" value="<?= e($sk) ?>" class="sr-only" <?= $sk === 'normal' ? 'checked' : '' ?>>
+                        <?= e($sl) ?>
+                    </label>
+                <?php endforeach; ?>
             </div>
         </div>
 

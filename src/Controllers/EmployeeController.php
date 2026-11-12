@@ -101,7 +101,7 @@ class EmployeeController
                 Session::flash('success', 'Reset to your regular default for today.');
             } else {
                 $beverage = Validator::enum(Request::post('beverage'), ['tea', 'coffee'], 'tea');
-                $sugar = Validator::enum(Request::post('sugar'), ['normal', 'less', 'none'], 'normal');
+                $sugar = Validator::enum(Request::post('sugar'), ['normal', 'less', 'extra', 'none'], 'normal');
                 $quantity = Validator::intRange(Request::post('quantity'), 1, 5, 1);
                 $note = Validator::str(Request::post('note'), 200);
                 OrderService::saveTodayOverride($user, $slotKey, $beverage, $sugar, $quantity, $note);
@@ -208,7 +208,7 @@ class EmployeeController
             foreach (['morning', 'afternoon'] as $slotKey) {
                 $enabled  = Request::post("{$slotKey}_enabled") === '1';
                 $beverage = Validator::enum(Request::post("{$slotKey}_beverage"), ['tea', 'coffee'], 'tea');
-                $sugar    = Validator::enum(Request::post("{$slotKey}_sugar"), ['normal', 'less', 'none'], 'normal');
+                $sugar    = Validator::enum(Request::post("{$slotKey}_sugar"), ['normal', 'less', 'extra', 'none'], 'normal');
                 $quantity = Validator::intRange(Request::post("{$slotKey}_quantity"), 1, 5, 1);
                 $note     = Validator::str(Request::post("{$slotKey}_note"), 200);
 
@@ -248,7 +248,7 @@ class EmployeeController
 
         if (Request::method() === 'POST') {
             $beverage = Validator::enum(Request::post('beverage'), ['tea', 'coffee'], 'tea');
-            $sugar = Validator::enum(Request::post('sugar'), ['normal', 'less', 'none'], 'normal');
+            $sugar = Validator::enum(Request::post('sugar'), ['normal', 'less', 'extra', 'none'], 'normal');
             $quantity = Validator::intRange(Request::post('quantity'), 1, 20, 1);
             $roomId = Validator::intRange(Request::post('room_id'), 1, 999999, (int)($user['room_id'] ?? 0));
             $note = Validator::str(Request::post('note'), 220);
@@ -377,7 +377,7 @@ class EmployeeController
                     }
                     $items[] = [
                         'beverage' => Validator::enum($bev, ['tea', 'coffee'], 'tea'),
-                        'sugar'    => Validator::enum($sugars[$idx] ?? 'normal', ['normal', 'less', 'none'], 'normal'),
+                        'sugar'    => Validator::enum($sugars[$idx] ?? 'normal', ['normal', 'less', 'extra', 'none'], 'normal'),
                         'quantity' => min(100, $qty),
                     ];
                 }

@@ -121,8 +121,8 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
                         </label>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-1.5" data-seg-group>
-                        <?php foreach (['normal' => __('sugar_normal'), 'less' => __('sugar_less'), 'none' => __('sugar_none')] as $sk => $sl): ?>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" data-seg-group>
+                        <?php foreach (sugar_options() as $sk => $sl): ?>
                             <label class="btn-touch border cursor-pointer text-xs px-2 whitespace-nowrap <?= $sug === $sk ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
                                 <input type="radio" name="<?= $key ?>_sugar" value="<?= $sk ?>" class="sr-only" <?= $sug === $sk ? 'checked' : '' ?>>
                                 <?= e($sl) ?>

@@ -32,6 +32,7 @@ return [
     'coffee' => 'Coffee',
     'sugar_normal' => 'Normal Sugar',
     'sugar_less' => 'Less Sugar',
+    'sugar_extra' => 'Extra Sugar',
     'sugar_none' => 'No Sugar',
     'quantity' => 'Quantity',
     'cups' => 'cup(s)',
