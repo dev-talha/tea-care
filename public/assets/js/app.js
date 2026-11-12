@@ -4,6 +4,134 @@
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
+  // Central Floating Dismissible Alert System (10s auto-dismiss + manual close)
+  const ALERT_DURATION_MS = 10000;
+  const alertIcons = {
+    success: 'ti-circle-check',
+    warning: 'ti-alert-triangle',
+    info: 'ti-info-circle',
+    error: 'ti-alert-circle'
+  };
+
+  const ensureAlertStack = () => {
+    let stack = document.getElementById('tc-alert-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'tc-alert-stack';
+      stack.setAttribute('role', 'region');
+      stack.setAttribute('aria-live', 'polite');
+      stack.setAttribute('aria-label', 'Notifications');
+      document.body.appendChild(stack);
+    }
+    return stack;
+  };
+
+  const dismissAlert = (el) => {
+    if (!el || el.dataset.closing === '1') return;
+    el.dataset.closing = '1';
+    if (el._tcTimer) {
+      clearTimeout(el._tcTimer);
+      el._tcTimer = null;
+    }
+    el.classList.add('is-closing');
+    setTimeout(() => {
+      if (el.parentNode) el.remove();
+    }, 240);
+  };
+
+  const bindAlertLifecycle = (el, durationMs = ALERT_DURATION_MS) => {
+    if (!el || el.dataset.tcBound === '1') return;
+    el.dataset.tcBound = '1';
+
+    const closeBtn = el.querySelector('[data-tc-alert-close]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => dismissAlert(el));
+    }
+
+    if (durationMs > 0) {
+      const prog = el.querySelector('.tc-alert-progress');
+      if (prog) {
+        prog.style.animationDuration = `${durationMs}ms`;
+      }
+      let remaining = durationMs;
+      let startedAt = Date.now();
+      const schedule = (ms) => {
+        if (el._tcTimer) clearTimeout(el._tcTimer);
+        startedAt = Date.now();
+        el._tcTimer = setTimeout(() => dismissAlert(el), ms);
+      };
+      schedule(remaining);
+
+      el.addEventListener('mouseenter', () => {
+        if (el.dataset.closing === '1') return;
+        remaining = Math.max(0, remaining - (Date.now() - startedAt));
+        if (el._tcTimer) {
+          clearTimeout(el._tcTimer);
+          el._tcTimer = null;
+        }
+      });
+      el.addEventListener('mouseleave', () => {
+        if (el.dataset.closing === '1') return;
+        if (remaining <= 0) {
+          dismissAlert(el);
+        } else {
+          schedule(remaining);
+        }
+      });
+    }
+  };
+
+  const showAlert = (message, type = 'info', durationMs = ALERT_DURATION_MS) => {
+    if (!message) return null;
+    const normType = type === 'danger' ? 'error' : (alertIcons[type] ? type : 'info');
+    const stack = ensureAlertStack();
+    const item = document.createElement('div');
+    item.className = `tc-alert-item tc-alert-${normType}`;
+    item.setAttribute('role', 'alert');
+    item.dataset.duration = String(durationMs);
+
+    const row = document.createElement('div');
+    row.className = 'tc-alert-row';
+
+    const icon = document.createElement('i');
+    icon.className = `ti ${alertIcons[normType]} tc-alert-icon`;
+
+    const msg = document.createElement('div');
+    msg.className = 'tc-alert-msg';
+    msg.textContent = String(message);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tc-alert-close';
+    btn.setAttribute('data-tc-alert-close', '1');
+    btn.setAttribute('aria-label', 'Close alert');
+    btn.innerHTML = '<i class="ti ti-x"></i>';
+
+    row.appendChild(icon);
+    row.appendChild(msg);
+    row.appendChild(btn);
+    item.appendChild(row);
+
+    if (durationMs > 0) {
+      const bar = document.createElement('div');
+      bar.className = 'tc-alert-bar';
+      const prog = document.createElement('span');
+      prog.className = 'tc-alert-progress';
+      bar.appendChild(prog);
+      item.appendChild(bar);
+    }
+
+    stack.appendChild(item);
+    bindAlertLifecycle(item, durationMs);
+    return item;
+  };
+
+  window.TeaCareAlert = { show: showAlert, dismiss: dismissAlert };
+  document.querySelectorAll('#tc-alert-stack .tc-alert-item').forEach((el) => {
+    const dur = parseInt(el.dataset.duration || String(ALERT_DURATION_MS), 10);
+    bindAlertLifecycle(el, Number.isFinite(dur) ? dur : ALERT_DURATION_MS);
+  });
+
   // Offline indicator & order submit protection
   const offlineBanner = document.getElementById('offline-banner');
   const syncOnlineState = () => {
@@ -25,7 +153,7 @@
 
     if (form.dataset.requireOnline === '1' && !navigator.onLine) {
       e.preventDefault();
-      alert(form.dataset.offlineMsg || 'You are offline. Connect to the internet to submit your order.');
+      showAlert(form.dataset.offlineMsg || 'You are offline. Connect to the internet to submit your order.', 'warning');
       return;
     }
 
@@ -456,7 +584,7 @@
       if (!(form instanceof HTMLFormElement) || form.dataset.ajaxAction !== '1' || e.defaultPrevented) return;
       e.preventDefault();
       if (!navigator.onLine) {
-        alert('You appear to be offline. Action requires an active connection.');
+        showAlert('You appear to be offline. Action requires an active connection.', 'warning');
         return;
       }
 
@@ -475,7 +603,9 @@
         });
         const data = await res.json().catch(() => ({ ok: res.ok }));
         if (!data.ok && data.error) {
-          alert(data.error);
+          showAlert(data.error, 'error');
+        } else if (data.ok && data.message) {
+          showAlert(data.message, 'success');
         }
         await runLivePoll(true);
       } catch (err) {

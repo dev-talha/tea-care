@@ -48,14 +48,14 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
     <!-- TAB 1: Regular Tea & Schedule Preferences -->
     <section id="settings-panel-regular" data-settings-panel="regular" class="space-y-4 <?= $curTab === 'regular' ? '' : 'hidden' ?>">
         <div class="card p-4 flex items-center justify-between gap-3">
-            <div>
+            <div class="min-w-0 flex-1">
                 <div class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
                     <?php if ($isPaused): ?>
-                        <i class="ti ti-power text-rose-600 text-base"></i>
-                        <span>Regular Orders: OFF</span>
+                        <i class="ti ti-power text-rose-600 text-base shrink-0"></i>
+                        <span class="truncate">Regular Orders: OFF</span>
                     <?php else: ?>
-                        <i class="ti ti-circle-check text-emerald-600 text-base"></i>
-                        <span>Regular Orders: ON</span>
+                        <i class="ti ti-circle-check text-emerald-600 text-base shrink-0"></i>
+                        <span class="truncate">Regular Orders: ON</span>
                     <?php endif; ?>
                 </div>
                 <div class="text-xs text-slate-500 mt-0.5"><?= e(__('pause_help')) ?></div>
@@ -241,11 +241,16 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
 
     <!-- TAB 3: Companion & Fun Extras -->
     <section id="settings-panel-fun" data-settings-panel="fun" class="space-y-4 <?= $curTab === 'fun' ? '' : 'hidden' ?>">
-        <div class="card p-5 space-y-4">
+        <div class="card p-4 sm:p-5 space-y-4">
             <div class="flex items-center justify-between gap-3">
-                <div class="font-bold text-sm md:text-base text-slate-800 flex items-center gap-1.5">
-                    <i class="ti ti-mood-smile text-amberwarm-600 text-lg"></i>
-                    <span>Funny Tea Monkey: <?= $monkeyOn ? 'ON' : 'OFF' ?></span>
+                <div class="min-w-0 flex-1">
+                    <div class="font-bold text-sm md:text-base text-slate-800 flex items-center gap-1.5">
+                        <i class="ti ti-mood-smile text-amberwarm-600 text-lg shrink-0"></i>
+                        <span class="truncate">Funny Tea Monkey</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-0.5">
+                        Status: <span class="font-semibold <?= $monkeyOn ? 'text-emerald-600' : 'text-rose-600' ?>"><?= $monkeyOn ? 'ON' : 'OFF' ?></span>
+                    </div>
                 </div>
                 <div class="inline-flex rounded-xl border border-stone-200 bg-stone-100 p-1 shrink-0 gap-1">
                     <form method="post" action="/settings" data-once-submit="1" onsubmit="try{localStorage.removeItem('tc_monkey_dismissed_v1');localStorage.removeItem('tc_monkey_next_visit_v1')}catch(e){}">
