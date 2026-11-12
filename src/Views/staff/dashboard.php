@@ -356,20 +356,16 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                             <div class="text-xs text-slate-600 break-words">
                                 By <strong><?= e($o['employee_name_snapshot']) ?></strong><?= !empty($o['meeting_title']) ? ' &bull; ' . e($o['meeting_title']) : '' ?><?= !empty($o['guest_count']) ? ' (' . (int)$o['guest_count'] . ' guests)' : '' ?> &bull; <span class="font-semibold text-amberwarm-600"><?= $totalCups ?> Cups</span>
                             </div>
-                            <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 pt-0.5">
+                            <div class="flex items-center flex-nowrap gap-2 overflow-x-auto whitespace-nowrap text-[11px] text-slate-500 pt-0.5">
                                 <?php if (!empty($o['requested_within'])): ?>
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 font-bold">
-                                        <i class="ti ti-clock-bolt text-xs"></i><?= e($o['requested_within']) ?>
-                                    </span>
-                                    <span class="text-slate-400">&bull;</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 font-bold shrink-0"><?= e($o['requested_within']) ?></span>
                                 <?php endif; ?>
-                                <span class="inline-flex items-center gap-1 font-medium">
+                                <span class="inline-flex items-center gap-1 font-medium shrink-0">
                                     <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
                                 </span>
                                 <?php if (!empty($o['accepted_by_name'])): ?>
-                                    <span class="text-slate-400">&bull;</span>
-                                    <span class="inline-flex items-center gap-1 font-semibold text-indigo-700">
-                                        <i class="ti ti-user text-xs"></i>Accepted: <?= e($o['accepted_by_name']) ?>
+                                    <span class="inline-flex items-center gap-1 font-semibold text-indigo-700 shrink-0">
+                                        <i class="ti ti-user text-xs"></i>Acc: <?= e(staff_short_name($o['accepted_by_name'])) ?>
                                     </span>
                                 <?php endif; ?>
                             </div>
@@ -420,35 +416,36 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                         ));
                     ?>
                     <div class="card p-4 space-y-3 <?= $isHi ? 'ring-2 ring-amberwarm-500' : '' ?>">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div class="flex items-center gap-3 min-w-0 flex-1">
-                                <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)($o['room_name_snapshot'] ?? ''), $drinkSummary); ?>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <?php if ($o['status'] === 'pending'): ?>
-                                            <span class="px-2 py-0.5 rounded-md bg-teal-600 text-white text-[10px] font-extrabold uppercase">New</span>
-                                        <?php endif; ?>
-                                        <span class="font-bold text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></span>
-                                    </div>
-                                    <div class="hidden sm:flex text-xs text-slate-500 truncate items-center gap-1">
-                                        <i class="ti ti-map-pin text-slate-400 shrink-0"></i>
-                                        <strong class="truncate"><?= e($o['room_name_snapshot']) ?></strong> &bull; <span class="truncate"><?= e($o['department_name_snapshot']) ?></span>
-                                    </div>
-                                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
-                                        <span class="inline-flex items-center gap-1">
-                                            <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
-                                        </span>
-                                        <?php if (!empty($o['accepted_by_name'])): ?>
-                                            <span>&bull;</span>
-                                            <span class="inline-flex items-center gap-1 font-semibold text-indigo-700">
-                                                <i class="ti ti-user text-xs"></i>Accepted: <?= e($o['accepted_by_name']) ?>
-                                            </span>
-                                        <?php endif; ?>
+                        <div class="space-y-1.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-3 min-w-0 flex-1">
+                                    <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)($o['room_name_snapshot'] ?? ''), $drinkSummary); ?>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <?php if ($o['status'] === 'pending'): ?>
+                                                <span class="px-2 py-0.5 rounded-md bg-teal-600 text-white text-[10px] font-extrabold uppercase">New</span>
+                                            <?php endif; ?>
+                                            <span class="font-bold text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></span>
+                                        </div>
+                                        <div class="hidden sm:flex text-xs text-slate-500 truncate items-center gap-1 mt-0.5">
+                                            <i class="ti ti-map-pin text-slate-400 shrink-0"></i>
+                                            <strong class="truncate"><?= e($o['room_name_snapshot']) ?></strong> &bull; <span class="truncate"><?= e($o['department_name_snapshot']) ?></span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="shrink-0">
+                                    <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
+                                </div>
                             </div>
-                            <div class="shrink-0">
-                                <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
+                            <div class="flex items-center flex-nowrap gap-2 overflow-x-auto whitespace-nowrap text-[11px] text-slate-500">
+                                <span class="inline-flex items-center gap-1 font-medium shrink-0">
+                                    <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                </span>
+                                <?php if (!empty($o['accepted_by_name'])): ?>
+                                    <span class="inline-flex items-center gap-1 font-semibold text-indigo-700 shrink-0">
+                                        <i class="ti ti-user text-xs"></i>Acc: <?= e(staff_short_name($o['accepted_by_name'])) ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -621,7 +618,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                     <?= e($drinkSummary) ?>
                                 </div>
                                 <div class="text-[11px] text-slate-400 truncate">
-                                    <?= e(strtoupper($o['order_type'])) ?> &bull; <?= e(date('g:i A', strtotime($o['updated_at']))) ?><?php if (!empty($o['accepted_by_name'])): ?> &bull; <span class="font-semibold text-slate-600"><?= e($o['accepted_by_name']) ?></span><?php endif; ?>
+                                    <?= e(strtoupper($o['order_type'])) ?> &bull; <?= e(date('g:i A', strtotime($o['updated_at']))) ?><?php if (!empty($o['accepted_by_name'])): ?> <span class="font-semibold text-slate-600 ml-1">Acc: <?= e(staff_short_name($o['accepted_by_name'])) ?></span><?php endif; ?>
                                 </div>
                             </div>
                         </div>

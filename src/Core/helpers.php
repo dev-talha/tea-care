@@ -62,3 +62,13 @@ function badge_sugar(string $sugar): string
         default => __('sugar_normal'),
     };
 }
+
+function staff_short_name(?string $name): string
+{
+    $raw = trim((string)$name);
+    if ($raw === '') {
+        return '';
+    }
+    $clean = trim((string)preg_replace('/\s*\([^)]*\)/', '', $raw));
+    return $clean !== '' ? $clean : $raw;
+}
