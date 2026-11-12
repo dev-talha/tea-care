@@ -84,6 +84,8 @@ $afternoonTimeLabel = format_time_12($slots['afternoon']['service_time'] ?? '15:
                     </label>
                 </div>
 
+                <div class="border-t border-stone-200 sm:hidden"></div>
+
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-seg-group>
                     <?php foreach (sugar_options() as $sk => $sl): ?>
                         <label class="btn-touch border cursor-pointer text-xs px-2 <?= $sug === $sk ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
