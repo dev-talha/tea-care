@@ -342,32 +342,28 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                     ?>
                     <div class="card p-4 space-y-3 border-2 border-amberwarm-400/60 bg-amberwarm-50/40">
                         <div class="space-y-1">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amberwarm-500 text-white text-[10px] font-extrabold uppercase">
-                                        Guest / Meeting &bull; <?= $totalCups ?> Cups
-                                    </span>
-                                    <?php if (!empty($o['requested_within'])): ?>
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
-                                            <i class="ti ti-clock-bolt text-xs"></i><?= e($o['requested_within']) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="shrink-0 flex flex-col items-end gap-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <h3 class="font-bold text-base text-slate-800 flex items-center gap-1 min-w-0 flex-1">
+                                    <i class="ti ti-map-pin text-amberwarm-600 shrink-0"></i>
+                                    <span class="truncate"><?= e($o['room_name_snapshot']) ?></span>
+                                </h3>
+                                <div class="shrink-0">
                                     <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
-                                    <span class="text-[11px] font-medium text-slate-500 inline-flex items-center gap-1">
-                                        <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
-                                    </span>
                                 </div>
                             </div>
-                            <h3 class="font-bold text-base text-slate-800 flex items-center gap-1">
-                                <i class="ti ti-map-pin text-amberwarm-600 shrink-0"></i>
-                                <span class="truncate"><?= e($o['room_name_snapshot']) ?></span>
-                            </h3>
                             <div class="text-xs text-slate-600 break-words">
-                                Requested by <strong><?= e($o['employee_name_snapshot']) ?></strong>
-                                <?= !empty($o['meeting_title']) ? ' &bull; ' . e($o['meeting_title']) : '' ?>
-                                <?= !empty($o['guest_count']) ? ' (' . (int)$o['guest_count'] . ' guests)' : '' ?>
+                                By <strong><?= e($o['employee_name_snapshot']) ?></strong><?= !empty($o['meeting_title']) ? ' &bull; ' . e($o['meeting_title']) : '' ?><?= !empty($o['guest_count']) ? ' (' . (int)$o['guest_count'] . ' guests)' : '' ?> &bull; <span class="font-semibold text-amberwarm-600"><?= $totalCups ?> Cups</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 pt-0.5">
+                                <?php if (!empty($o['requested_within'])): ?>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 font-bold">
+                                        <i class="ti ti-clock-bolt text-xs"></i><?= e($o['requested_within']) ?>
+                                    </span>
+                                    <span class="text-slate-400">&bull;</span>
+                                <?php endif; ?>
+                                <span class="inline-flex items-center gap-1 font-medium">
+                                    <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                </span>
                             </div>
                         </div>
 
