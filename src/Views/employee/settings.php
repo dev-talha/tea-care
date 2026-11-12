@@ -242,6 +242,7 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
     </section>
 
     <!-- TAB 3: Companion & Fun Extras -->
+    <?php $monkeyActive = $monkeyOn && !$monkeyDismissedToday; ?>
     <section id="settings-panel-fun" data-settings-panel="fun" class="space-y-4 <?= $curTab === 'fun' ? '' : 'hidden' ?>">
         <div class="card p-4 sm:p-5 space-y-4">
             <div class="flex items-center justify-between gap-3">
@@ -251,21 +252,31 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
                         <span class="truncate">Funny Tea Monkey</span>
                     </div>
                     <div class="text-xs text-slate-500 mt-0.5">
-                        Status: <span class="font-semibold <?= $monkeyOn ? 'text-emerald-600' : 'text-rose-600' ?>"><?= $monkeyOn ? 'ON' : 'OFF' ?></span>
+                        Status:
+                        <?php if ($monkeyActive): ?>
+                            <span class="font-semibold text-emerald-600">ON</span>
+                        <?php elseif ($monkeyOn && $monkeyDismissedToday): ?>
+                            <span class="font-semibold text-amberwarm-600">Hidden Today</span>
+                        <?php else: ?>
+                            <span class="font-semibold text-rose-600">OFF</span>
+                        <?php endif; ?>
                     </div>
+                    <?php if ($monkeyOn && $monkeyDismissedToday): ?>
+                        <div class="text-[11px] text-slate-500 mt-1">Closed for today. Tap <strong>ON</strong> to bring it back now, or <strong>OFF</strong> to disable permanently.</div>
+                    <?php endif; ?>
                 </div>
                 <div class="inline-flex rounded-xl border border-stone-200 bg-stone-100 p-1 shrink-0 gap-1">
                     <form method="post" action="/settings" data-once-submit="1" onsubmit="try{localStorage.removeItem('tc_monkey_dismissed_v1');localStorage.removeItem('tc_monkey_next_visit_v1')}catch(e){}">
                         <?= Session::csrfField() ?>
                         <input type="hidden" name="form_mode" value="monkey_pref">
                         <input type="hidden" name="show_funny_monkey" value="1">
-                        <button type="submit" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition <?= ($monkeyOn && !$monkeyDismissedToday) ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-white' ?>">ON</button>
+                        <button type="submit" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition <?= $monkeyActive ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-white' ?>">ON</button>
                     </form>
                     <form method="post" action="/settings" data-once-submit="1">
                         <?= Session::csrfField() ?>
                         <input type="hidden" name="form_mode" value="monkey_pref">
                         <input type="hidden" name="show_funny_monkey" value="0">
-                        <button type="submit" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition <?= !$monkeyOn ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:bg-white' ?>">OFF</button>
+                        <button type="submit" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition <?= !$monkeyActive ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:bg-white' ?>">OFF</button>
                     </form>
                 </div>
             </div>
