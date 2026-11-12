@@ -34,7 +34,7 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
                 data-settings-tab="regular"
                 onclick="switchSettingsTab('regular')"
                 class="min-h-[40px] px-2 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center whitespace-nowrap transition <?= $curTab === 'regular' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600 hover:bg-stone-100' ?>">
-            <span>Tea Defaults</span>
+            <span>Defaults</span>
         </button>
         <button type="button"
                 role="tab"
@@ -123,9 +123,9 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
 
                     <div class="border-t border-stone-200 sm:hidden"></div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" data-seg-group>
+                    <div class="grid grid-cols-2 gap-2" data-seg-group>
                         <?php foreach (sugar_options() as $sk => $sl): ?>
-                            <label class="btn-touch border cursor-pointer text-xs px-2 whitespace-nowrap <?= $sug === $sk ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
+                            <label class="btn-touch border cursor-pointer text-xs px-3 whitespace-nowrap <?= $sug === $sk ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
                                 <input type="radio" name="<?= $key ?>_sugar" value="<?= $sk ?>" class="sr-only" <?= $sug === $sk ? 'checked' : '' ?>>
                                 <?= e($sl) ?>
                             </label>
@@ -136,7 +136,7 @@ $monkeyDismissedToday = (($user['monkey_dismissed_date'] ?? '') === \App\Service
                         <span class="text-xs font-semibold text-slate-600"><?= e(__('quantity')) ?></span>
                         <div class="flex items-center gap-2">
                             <button type="button" data-step-delta="-1" class="w-10 h-10 rounded-xl border border-stone-300 bg-white font-bold text-lg inline-flex items-center justify-center"><i class="ti ti-minus"></i></button>
-                            <input type="number" name="<?= $key ?>_quantity" min="1" max="5" value="<?= $qty ?>" class="w-12 h-10 text-center font-bold rounded-xl border border-stone-300 bg-white">
+                            <input type="number" name="<?= $key ?>_quantity" min="1" max="5" value="<?= $qty ?>" class="w-14 h-10 text-center px-0 font-bold rounded-xl border border-stone-300 bg-white">
                             <button type="button" data-step-delta="1" class="w-10 h-10 rounded-xl border border-stone-300 bg-white font-bold text-lg inline-flex items-center justify-center"><i class="ti ti-plus"></i></button>
                         </div>
                     </div>

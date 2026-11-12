@@ -86,9 +86,9 @@ $afternoonTimeLabel = format_time_12($slots['afternoon']['service_time'] ?? '15:
 
                 <div class="border-t border-stone-200 sm:hidden"></div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-seg-group>
+                <div class="grid grid-cols-2 gap-2" data-seg-group>
                     <?php foreach (sugar_options() as $sk => $sl): ?>
-                        <label class="btn-touch border cursor-pointer text-xs px-2 <?= $sug === $sk ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
+                        <label class="btn-touch border cursor-pointer text-xs px-3 whitespace-nowrap <?= $sug === $sk ? 'bg-tea-600 text-white border-tea-600' : 'bg-white text-slate-700 border-stone-200' ?>">
                             <input type="radio" name="<?= $key ?>_sugar" value="<?= $sk ?>" class="sr-only" <?= $sug === $sk ? 'checked' : '' ?>>
                             <?= e($sl) ?>
                         </label>
@@ -99,7 +99,7 @@ $afternoonTimeLabel = format_time_12($slots['afternoon']['service_time'] ?? '15:
                     <span class="text-xs font-semibold text-slate-600"><?= e(__('quantity')) ?></span>
                     <div class="flex items-center gap-2">
                         <button type="button" data-step-delta="-1" class="w-11 h-11 rounded-xl border border-stone-300 bg-white font-bold text-lg inline-flex items-center justify-center"><i class="ti ti-minus"></i></button>
-                        <input type="number" name="<?= $key ?>_quantity" min="1" max="5" value="<?= $qty ?>" class="w-14 h-11 text-center font-bold rounded-xl border border-stone-300 bg-white">
+                        <input type="number" name="<?= $key ?>_quantity" min="1" max="5" value="<?= $qty ?>" class="w-14 h-11 text-center px-0 font-bold rounded-xl border border-stone-300 bg-white">
                         <button type="button" data-step-delta="1" class="w-11 h-11 rounded-xl border border-stone-300 bg-white font-bold text-lg inline-flex items-center justify-center"><i class="ti ti-plus"></i></button>
                     </div>
                 </div>
