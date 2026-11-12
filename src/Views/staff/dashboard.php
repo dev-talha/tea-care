@@ -328,74 +328,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
 
 <?php elseif ($tab === 'urgent'): ?>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <!-- A. Urgent On-Demand Requests -->
-        <section class="space-y-3 min-w-0">
-            <h2 class="text-sm font-bold uppercase tracking-wide text-slate-600 inline-flex items-center gap-1.5">
-                <i class="ti ti-bolt text-base text-amberwarm-600"></i>
-                <span><?= e(__('urgent_requests')) ?> (<?= count($urgentOrders) ?>)</span>
-            </h2>
-
-            <?php if (empty($urgentOrders)): ?>
-                <div class="card p-6 text-center text-sm text-slate-500">No active on-demand requests right now<?= $hasFilters ? ' for this filter' : '' ?>.</div>
-            <?php else: ?>
-                <div class="space-y-3">
-                    <?php foreach ($urgentOrders as $o):
-                        $isHi = $highlight === (int)$o['id'];
-                        $cupUrl = cup_image_url($o['cup_image_snapshot'] ?? null, (int)$o['user_id']);
-                        $drinkSummary = implode(', ', array_map(
-                            fn($it) => (int)$it['quantity'] . 'x ' . badge_beverage($it['beverage']) . ' (' . badge_sugar($it['sugar']) . ')',
-                            $o['items']
-                        ));
-                    ?>
-                    <div class="card p-4 space-y-3 <?= $isHi ? 'ring-2 ring-amberwarm-500' : '' ?>">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div class="flex items-center gap-3 min-w-0 flex-1">
-                                <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)($o['room_name_snapshot'] ?? ''), $drinkSummary); ?>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <?php if ($o['status'] === 'pending'): ?>
-                                            <span class="px-2 py-0.5 rounded-md bg-teal-600 text-white text-[10px] font-extrabold uppercase">New</span>
-                                        <?php endif; ?>
-                                        <span class="font-bold text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></span>
-                                    </div>
-                                    <div class="hidden sm:flex text-xs text-slate-500 truncate items-center gap-1">
-                                        <i class="ti ti-map-pin text-slate-400 shrink-0"></i>
-                                        <strong class="truncate"><?= e($o['room_name_snapshot']) ?></strong> &bull; <span class="truncate"><?= e($o['department_name_snapshot']) ?></span>
-                                    </div>
-                                    <div class="text-[11px] text-slate-400 inline-flex items-center gap-1">
-                                        <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="shrink-0">
-                                <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl bg-cream-50 border border-stone-200 p-3">
-                            <?php foreach ($o['items'] as $it): ?>
-                                <div class="font-bold text-base text-slate-800 flex flex-wrap items-center gap-1.5">
-                                    <i class="ti <?= $it['beverage'] === 'coffee' ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700' ?> text-lg"></i>
-                                    <span><?= (int)$it['quantity'] ?> &times; <?= e(badge_beverage($it['beverage'])) ?></span>
-                                    <span class="text-xs font-semibold text-tea-700">&bull; <?= e(badge_sugar($it['sugar'])) ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                            <?php if (!empty($o['note'])): ?>
-                                <div class="text-xs text-slate-600 mt-1 flex items-start gap-1 break-words">
-                                    <i class="ti ti-notes text-slate-400 mt-0.5 shrink-0"></i>
-                                    <span>"<?= e($o['note']) ?>"</span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <?php $renderOrderActions($o, $filterRoomId, $filterDeptId); ?>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </section>
-
-        <!-- C. Guest & Meeting Orders -->
+        <!-- A. Guest & Meeting Orders (First on both Desktop & Mobile) -->
         <section class="space-y-3 min-w-0">
             <h2 class="text-sm font-bold uppercase tracking-wide text-amberwarm-600 inline-flex items-center gap-1.5">
                 <i class="ti ti-users text-base"></i>
@@ -452,6 +385,73 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                             <?php endforeach; ?>
                             <?php if (!empty($o['note'])): ?>
                                 <div class="text-xs text-slate-600 pt-1 border-t border-stone-100 mt-1 flex items-start gap-1 break-words">
+                                    <i class="ti ti-notes text-slate-400 mt-0.5 shrink-0"></i>
+                                    <span>"<?= e($o['note']) ?>"</span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php $renderOrderActions($o, $filterRoomId, $filterDeptId); ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <!-- B. Urgent On-Demand Requests -->
+        <section class="space-y-3 min-w-0">
+            <h2 class="text-sm font-bold uppercase tracking-wide text-slate-600 inline-flex items-center gap-1.5">
+                <i class="ti ti-bolt text-base text-amberwarm-600"></i>
+                <span><?= e(__('urgent_requests')) ?> (<?= count($urgentOrders) ?>)</span>
+            </h2>
+
+            <?php if (empty($urgentOrders)): ?>
+                <div class="card p-6 text-center text-sm text-slate-500">No active on-demand requests right now<?= $hasFilters ? ' for this filter' : '' ?>.</div>
+            <?php else: ?>
+                <div class="space-y-3">
+                    <?php foreach ($urgentOrders as $o):
+                        $isHi = $highlight === (int)$o['id'];
+                        $cupUrl = cup_image_url($o['cup_image_snapshot'] ?? null, (int)$o['user_id']);
+                        $drinkSummary = implode(', ', array_map(
+                            fn($it) => (int)$it['quantity'] . 'x ' . badge_beverage($it['beverage']) . ' (' . badge_sugar($it['sugar']) . ')',
+                            $o['items']
+                        ));
+                    ?>
+                    <div class="card p-4 space-y-3 <?= $isHi ? 'ring-2 ring-amberwarm-500' : '' ?>">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)($o['room_name_snapshot'] ?? ''), $drinkSummary); ?>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <?php if ($o['status'] === 'pending'): ?>
+                                            <span class="px-2 py-0.5 rounded-md bg-teal-600 text-white text-[10px] font-extrabold uppercase">New</span>
+                                        <?php endif; ?>
+                                        <span class="font-bold text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></span>
+                                    </div>
+                                    <div class="hidden sm:flex text-xs text-slate-500 truncate items-center gap-1">
+                                        <i class="ti ti-map-pin text-slate-400 shrink-0"></i>
+                                        <strong class="truncate"><?= e($o['room_name_snapshot']) ?></strong> &bull; <span class="truncate"><?= e($o['department_name_snapshot']) ?></span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 inline-flex items-center gap-1">
+                                        <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl bg-cream-50 border border-stone-200 p-3">
+                            <?php foreach ($o['items'] as $it): ?>
+                                <div class="font-bold text-base text-slate-800 flex flex-wrap items-center gap-1.5">
+                                    <i class="ti <?= $it['beverage'] === 'coffee' ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700' ?> text-lg"></i>
+                                    <span><?= (int)$it['quantity'] ?> &times; <?= e(badge_beverage($it['beverage'])) ?></span>
+                                    <span class="text-xs font-semibold text-tea-700">&bull; <?= e(badge_sugar($it['sugar'])) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (!empty($o['note'])): ?>
+                                <div class="text-xs text-slate-600 mt-1 flex items-start gap-1 break-words">
                                     <i class="ti ti-notes text-slate-400 mt-0.5 shrink-0"></i>
                                     <span>"<?= e($o['note']) ?>"</span>
                                 </div>
