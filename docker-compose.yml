@@ -1,0 +1,57 @@
+services:
+  app:
+    build:
+      context: .
+      target: app
+    container_name: teacare_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - teacare_uploads:/var/www/html/storage/uploads
+      - teacare_logs:/var/www/html/storage/logs
+    networks:
+      - teacare_net
+      - infra_mysql_net
+
+  web:
+    build:
+      context: .
+      target: web
+    container_name: teacare_web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18092:80"
+    depends_on:
+      - app
+    networks:
+      - teacare_net
+
+  scheduler:
+    build:
+      context: .
+      target: app
+    container_name: teacare_scheduler
+    restart: unless-stopped
+    env_file:
+      - .env
+    entrypoint: ["/bin/sh", "-c", "sleep 5 && exec php /var/www/html/bin/scheduler.php"]
+    volumes:
+      - teacare_uploads:/var/www/html/storage/uploads
+      - teacare_logs:/var/www/html/storage/logs
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - teacare_net
+      - infra_mysql_net
+
+volumes:
+  teacare_uploads:
+  teacare_logs:
+
+networks:
+  teacare_net:
+    driver: bridge
+  infra_mysql_net:
+    external: true

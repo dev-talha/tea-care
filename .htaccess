@@ -1,0 +1,12 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Never expose internal application folders or sensitive config files
+    RewriteRule ^(\.git|\.env|src|bin|database|storage|tests|vendor|docker|resources|composer\.(json|lock)|package\.json|tailwind\.config\.js) - [F,L,NC]
+
+    # Forward all other HTTP requests cleanly into /public when Document Root points to project root
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>

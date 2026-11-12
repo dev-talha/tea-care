@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@view-transition {
+  navigation: auto;
+}
+
+@keyframes tcFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tcSnoozeNod {
+  0%, 100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  50% {
+    transform: rotate(3deg) translateY(2px);
+  }
+}
+
+@keyframes tcFloatZ {
+  0% {
+    opacity: 0;
+    transform: translate(0, 2px) scale(0.75);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(4px, -10px) scale(1.05);
+  }
+}
+
+@keyframes tcChangaBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.03);
+  }
+}
+
+@keyframes tcSteamRise {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2.5px);
+  }
+}
+
+.tc-mascot-snooze {
+  animation: tcSnoozeNod 3.2s ease-in-out infinite;
+  transform-origin: center 70%;
+}
+
+.tc-mascot-z1 {
+  animation: tcFloatZ 2.4s ease-out infinite;
+}
+
+.tc-mascot-z2 {
+  animation: tcFloatZ 2.4s ease-out 0.9s infinite;
+}
+
+.tc-mascot-changa {
+  animation: tcChangaBounce 1.8s ease-in-out infinite;
+}
+
+.tc-mascot-steam {
+  animation: tcSteamRise 1.6s ease-in-out infinite;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    overflow-x: clip;
+    font-family: 'Inter', 'Noto Sans Bengali', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  @media (max-width: 767px) {
+    html {
+      font-size: 17px;
+    }
+    .text-\[11px\] {
+      font-size: 0.75rem;
+      line-height: 1.15rem;
+    }
+  }
+  body {
+    @apply text-slate-800 antialiased overflow-x-clip;
+    background: linear-gradient(180deg, #f1faf5 0%, #fafdf9 42%, #fffaf1 100%);
+  }
+}
+
+@layer components {
+  .page-enter {
+    animation: tcFadeIn 0.16s ease-out both;
+  }
+  .btn-touch {
+    @apply min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn-touch bg-tea-600 text-white hover:bg-tea-700 shadow-sm;
+  }
+  .btn-amber {
+    @apply btn-touch bg-amberwarm-500 text-white hover:bg-amberwarm-600 shadow-sm;
+  }
+  .btn-outline {
+    @apply btn-touch bg-white border border-tea-200/80 text-slate-700 hover:bg-tea-50/70;
+  }
+  .btn-danger {
+    @apply btn-touch bg-rose-600 text-white hover:bg-rose-700 shadow-sm;
+  }
+  .card {
+    @apply bg-white/95 rounded-2xl border border-tea-200/60 shadow-[0_2px_10px_rgba(45,106,79,0.05)] transition-shadow duration-150 md:hover:shadow-md;
+  }
+  .input-field {
+    @apply w-full min-h-[44px] rounded-xl border border-tea-200 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 focus:border-tea-500 focus:outline-none focus:ring-2 focus:ring-tea-500/20;
+  }
+  .label-text {
+    @apply block text-sm font-medium text-slate-700 mb-1.5;
+  }
+}

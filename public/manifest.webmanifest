@@ -1,0 +1,25 @@
+{
+  "name": "TeaCare — Office Tea & Refreshments",
+  "short_name": "TeaCare",
+  "description": "Mobile-first office tea, coffee and guest refreshment management",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#2d6a4f",
+  "background_color": "#fdfbf7",
+  "icons": [
+    {
+      "src": "/assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

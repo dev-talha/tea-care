@@ -1,0 +1,437 @@
+(() => {
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
+  // Offline indicator & order submit protection
+  const offlineBanner = document.getElementById('offline-banner');
+  const syncOnlineState = () => {
+    if (!offlineBanner) return;
+    if (navigator.onLine) {
+      offlineBanner.classList.add('hidden');
+    } else {
+      offlineBanner.classList.remove('hidden');
+    }
+  };
+  window.addEventListener('online', syncOnlineState);
+  window.addEventListener('offline', syncOnlineState);
+  syncOnlineState();
+
+  // Prevent double-taps & offline form submits
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+
+    if (form.dataset.requireOnline === '1' && !navigator.onLine) {
+      e.preventDefault();
+      alert(form.dataset.offlineMsg || 'You are offline. Connect to the internet to submit your order.');
+      return;
+    }
+
+    if (form.dataset.submitting === '1') {
+      e.preventDefault();
+      return;
+    }
+
+    if (form.dataset.onceSubmit === '1') {
+      form.dataset.submitting = '1';
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-70');
+      }
+    }
+  });
+
+  // Quantity Stepper (+/-)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-step-delta]');
+    if (!btn) return;
+    const targetId = btn.getAttribute('data-step-target');
+    const input = targetId ? document.getElementById(targetId) : btn.parentElement.querySelector('input[type="number"]');
+    if (!input) return;
+    const min = parseInt(input.min || '1', 10);
+    const max = parseInt(input.max || '50', 10);
+    const delta = parseInt(btn.getAttribute('data-step-delta') || '0', 10);
+    const next = Math.min(max, Math.max(min, (parseInt(input.value || '1', 10) || min) + delta));
+    input.value = String(next);
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  // Segmented Radio Visual Sync
+  document.addEventListener('change', (e) => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.type === 'radio' && input.closest('[data-seg-group]')) {
+      const group = input.closest('[data-seg-group]');
+      group.querySelectorAll('label').forEach((lbl) => {
+        const r = lbl.querySelector('input[type="radio"]');
+        if (r && r.checked) {
+          lbl.classList.add('bg-tea-600', 'text-white', 'border-tea-600', 'shadow-sm');
+          lbl.classList.remove('bg-white', 'text-slate-700', 'border-stone-200');
+        } else {
+          lbl.classList.remove('bg-tea-600', 'text-white', 'border-tea-600', 'shadow-sm');
+          lbl.classList.add('bg-white', 'text-slate-700', 'border-stone-200');
+        }
+      });
+    }
+  });
+
+  // PWA Install Prompt
+  let deferredPrompt = null;
+  const installBanner = document.getElementById('pwa-install-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const iosGuide = document.getElementById('pwa-ios-guide');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isDismissed = localStorage.getItem('teacare_pwa_dismissed') === '1';
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (!isStandalone && !isDismissed && installBanner) {
+    if (isIos && iosGuide) {
+      installBanner.classList.remove('hidden');
+      iosGuide.classList.remove('hidden');
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isStandalone && !isDismissed && installBanner && installBtn) {
+      installBanner.classList.remove('hidden');
+      installBtn.classList.remove('hidden');
+    }
+  });
+
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      if (installBanner) installBanner.classList.add('hidden');
+    });
+  }
+
+  if (dismissBtn && installBanner) {
+    dismissBtn.addEventListener('click', () => {
+      localStorage.setItem('teacare_pwa_dismissed', '1');
+      installBanner.classList.add('hidden');
+    });
+  }
+
+  // Push Helper Functions
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  window.TeaCarePush = {
+    async enable(csrfToken) {
+      if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        throw new Error('Push notifications are not supported on this browser.');
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        throw new Error('Notification permission was denied.');
+      }
+      const keyRes = await fetch('/api/push/vapid-key');
+      const keyData = await keyRes.json();
+      if (!keyData.ok || !keyData.publicKey) {
+        throw new Error('Server VAPID key is not configured.');
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+      });
+      const saveRes = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({ subscription: sub.toJSON() })
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.ok) {
+        throw new Error(saveData.error || 'Failed to save subscription');
+      }
+      return saveData;
+    },
+    async test(csrfToken) {
+      const res = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({})
+      });
+      return res.json();
+    }
+  };
+
+  // Smooth page navigation progress indicator
+  const navBar = document.getElementById('nav-progress');
+  const startNavProgress = () => {
+    if (!navBar) return;
+    navBar.style.opacity = '1';
+    navBar.style.width = '68%';
+  };
+  const resetNavProgress = () => {
+    if (!navBar) return;
+    navBar.style.opacity = '0';
+    navBar.style.width = '0%';
+  };
+  window.addEventListener('pageshow', resetNavProgress);
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (
+      href.startsWith('/') &&
+      !href.includes('export=csv') &&
+      !a.hasAttribute('download') &&
+      a.target !== '_blank' &&
+      !e.metaKey && !e.ctrlKey && !e.shiftKey
+    ) {
+      startNavProgress();
+    }
+  });
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (form instanceof HTMLFormElement && !e.defaultPrevented && !form.hasAttribute('data-ajax-action')) {
+      startNavProgress();
+    }
+  });
+
+  // Personal Cup Lightbox Popup Modal
+  const cupModal = document.getElementById('cup-photo-modal');
+  const closeCupModal = () => {
+    if (!cupModal) return;
+    cupModal.classList.add('hidden');
+    document.body.style.overflow = '';
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!cupModal) return;
+    const trigger = e.target.closest('[data-cup-preview]');
+    if (trigger) {
+      e.preventDefault();
+      const imgEl = document.getElementById('cup-modal-img');
+      const nameEl = document.getElementById('cup-modal-name');
+      const empIdEl = document.getElementById('cup-modal-empid');
+      const locEl = document.getElementById('cup-modal-loc');
+      const drinkEl = document.getElementById('cup-modal-drink');
+
+      const src = trigger.getAttribute('data-cup-src') || '';
+      const name = trigger.getAttribute('data-cup-name') || 'Employee';
+      const empId = trigger.getAttribute('data-cup-empid') || '';
+      const dept = trigger.getAttribute('data-cup-dept') || '';
+      const room = trigger.getAttribute('data-cup-room') || '';
+      const drink = trigger.getAttribute('data-cup-drink') || '';
+
+      if (imgEl) imgEl.src = src;
+      if (nameEl) nameEl.textContent = name;
+      if (empIdEl) {
+        if (empId) {
+          empIdEl.textContent = empId;
+          empIdEl.classList.remove('hidden');
+        } else {
+          empIdEl.classList.add('hidden');
+        }
+      }
+      if (locEl) {
+        const parts = [];
+        if (room) parts.push('Room: ' + room);
+        if (dept) parts.push('Dept: ' + dept);
+        locEl.textContent = parts.join('  •  ');
+      }
+      if (drinkEl) {
+        if (drink) {
+          drinkEl.textContent = drink;
+          drinkEl.classList.remove('hidden');
+        } else {
+          drinkEl.classList.add('hidden');
+        }
+      }
+
+      cupModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      return;
+    }
+
+    if (e.target.closest('[data-cup-modal-close]') || e.target === cupModal) {
+      closeCupModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && cupModal && !cupModal.classList.contains('hidden')) {
+      closeCupModal();
+    }
+  });
+
+  // Real-time AJAX Status & New Order Sync + Instant Action Forms
+  const isStaffLive = Boolean(document.getElementById('staff-live-panel'));
+  const isEmployeeLive = Boolean(document.getElementById('employee-live-root'));
+
+  if (isStaffLive || isEmployeeLive) {
+    let lastFp = null;
+    let lastUrgentCnt = null;
+    let syncing = false;
+
+    const pingNewOrder = () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 740;
+        gain.gain.value = 0.04;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        setTimeout(() => { osc.stop(); ctx.close().catch(() => {}); }, 140);
+      } catch (e) {}
+    };
+
+    const syncHtmlFromCurrentUrl = async () => {
+      const res = await fetch(window.location.href, {
+        headers: { 'X-TeaCare-Live': '1' },
+        credentials: 'same-origin'
+      });
+      if (!res.ok) return;
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+
+      if (isStaffLive) {
+        ['staff-live-top', 'staff-live-tabs', 'staff-live-panel'].forEach((id) => {
+          const cur = document.getElementById(id);
+          const nxt = doc.getElementById(id);
+          if (cur && nxt) cur.innerHTML = nxt.innerHTML;
+        });
+      } else if (isEmployeeLive) {
+        const curRoot = document.getElementById('employee-live-root');
+        const nxtDocRoot = doc.getElementById('employee-live-root');
+        if (!curRoot || !nxtDocRoot) return;
+
+        const openEditor = curRoot.querySelector('[id^="edit-"]:not(.hidden)');
+        if (!openEditor) {
+          curRoot.innerHTML = nxtDocRoot.innerHTML;
+        } else {
+          const curSlots = document.getElementById('employee-slots-grid');
+          const nxtSlots = doc.getElementById('employee-slots-grid');
+          if (curSlots && nxtSlots) curSlots.className = nxtSlots.className;
+
+          const curReq = document.getElementById('employee-live-requests');
+          const nxtReq = doc.getElementById('employee-live-requests');
+          if (curReq && nxtReq) {
+            curReq.innerHTML = nxtReq.innerHTML;
+          } else if (!curReq && nxtReq) {
+            curRoot.appendChild(document.importNode(nxtReq, true));
+          } else if (curReq && !nxtReq) {
+            curReq.remove();
+          }
+        }
+      }
+    };
+
+    const runLivePoll = async (forceRefresh = false) => {
+      if (syncing || !navigator.onLine) return;
+      if (!forceRefresh && document.visibilityState === 'hidden') return;
+      if (!forceRefresh && document.activeElement && document.activeElement.tagName === 'SELECT' && document.activeElement.closest('#staff-live-panel')) {
+        return;
+      }
+
+      syncing = true;
+      try {
+        if (forceRefresh) {
+          await syncHtmlFromCurrentUrl();
+        }
+        const endpoint = isStaffLive ? '/staff/poll' : '/today/poll';
+        const url = lastFp ? `${endpoint}?fp=${encodeURIComponent(lastFp)}` : endpoint;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.ok || !data.fingerprint) return;
+
+        if (isStaffLive) {
+          if (typeof data.urgent === 'number') {
+            if (lastUrgentCnt !== null && data.urgent > lastUrgentCnt) {
+              pingNewOrder();
+            }
+            lastUrgentCnt = data.urgent;
+          }
+        }
+
+        if (lastFp === null) {
+          lastFp = data.fingerprint;
+          if (!forceRefresh) return;
+        }
+
+        if (!forceRefresh && data.changed && data.fingerprint !== lastFp) {
+          lastFp = data.fingerprint;
+          await syncHtmlFromCurrentUrl();
+        } else if (forceRefresh) {
+          lastFp = data.fingerprint;
+        }
+      } catch (e) {
+      } finally {
+        syncing = false;
+      }
+    };
+
+    document.addEventListener('submit', async (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement) || form.dataset.ajaxAction !== '1' || e.defaultPrevented) return;
+      e.preventDefault();
+      if (!navigator.onLine) {
+        alert('You appear to be offline. Action requires an active connection.');
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-70');
+      }
+
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+        const data = await res.json().catch(() => ({ ok: res.ok }));
+        if (!data.ok && data.error) {
+          alert(data.error);
+        }
+        await runLivePoll(true);
+      } catch (err) {
+        form.submit();
+      } finally {
+        resetNavProgress();
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('opacity-70');
+        }
+      }
+    });
+
+    runLivePoll(false);
+    setInterval(() => runLivePoll(false), 4000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') runLivePoll(false);
+    });
+  }
+})();
