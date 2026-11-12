@@ -199,13 +199,11 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
 
 <!-- Mobile Orders Session Toggle (Morning / Afternoon) shown only on Mobile inside Orders tabs -->
 <?php if ($tab === 'morning' || $tab === 'afternoon'): ?>
-    <div class="md:hidden grid grid-cols-2 gap-1.5 bg-white p-1.5 rounded-2xl border border-stone-200 text-xs font-bold">
-        <a href="<?= e($buildTabUrl('morning')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 <?= $tab === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
-            <i class="ti ti-sun text-sm"></i>
+    <div class="md:hidden grid grid-cols-2 gap-1.5 bg-white p-1.5 rounded-2xl border border-stone-200 font-bold">
+        <a href="<?= e($buildTabUrl('morning')) ?>" style="font-size:11px;" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center whitespace-nowrap <?= $tab === 'morning' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
             <span>Morning (<?= e($morningLabel) ?>)</span>
         </a>
-        <a href="<?= e($buildTabUrl('afternoon')) ?>" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center gap-1.5 <?= $tab === 'afternoon' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
-            <i class="ti ti-clock text-sm"></i>
+        <a href="<?= e($buildTabUrl('afternoon')) ?>" style="font-size:11px;" class="text-center py-2.5 px-2 rounded-xl flex items-center justify-center whitespace-nowrap <?= $tab === 'afternoon' ? 'bg-tea-600 text-white shadow-sm' : 'text-slate-600' ?>">
             <span>Afternoon (<?= e($afternoonLabel) ?>)</span>
         </a>
     </div>
@@ -507,8 +505,8 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                 $unfinished = array_values(array_filter($room['orders'], fn($o) => $o['id'] !== null && in_array($o['status'], ['pending', 'accepted', 'preparing', 'almost_done'], true)));
             ?>
             <div class="card p-4 space-y-3 min-w-0">
-                <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-stone-100">
-                    <h3 class="font-bold text-sm text-tea-800 inline-flex items-center gap-1.5 min-w-0">
+                <div class="flex items-center justify-between gap-2 pb-2 border-b border-stone-100">
+                    <h3 class="flex-1 min-w-0 font-bold text-sm text-tea-800 inline-flex items-center gap-1.5">
                         <i class="ti ti-door text-base shrink-0"></i>
                         <span class="truncate"><?= e($room['room_name']) ?> (<?= count($room['orders']) ?>)</span>
                     </h3>
@@ -522,8 +520,8 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                             <?php foreach ($unfinished as $uo): ?>
                                 <input type="hidden" name="order_ids[]" value="<?= (int)$uo['id'] ?>">
                             <?php endforeach; ?>
-                            <button type="submit" class="px-3 py-1.5 rounded-lg bg-tea-600 text-white text-xs font-bold inline-flex items-center gap-1">
-                                <i class="ti ti-circle-check"></i>Deliver Room (<?= count($unfinished) ?>)
+                            <button type="submit" style="padding: 0.375rem 0.625rem;" class="rounded-lg bg-tea-600 text-white text-xs font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                                <i class="ti ti-circle-check"></i><?php if ((int)$room['room_id'] === 0): ?>Deliver All (<?= count($unfinished) ?>)<?php else: ?>Deliver <span class="hidden sm:inline">Room </span>(<?= count($unfinished) ?>)<?php endif; ?>
                             </button>
                         </form>
                     <?php endif; ?>
