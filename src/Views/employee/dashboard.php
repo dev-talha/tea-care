@@ -325,7 +325,7 @@ $announcements = $announcements ?? [];
                                 <?php endforeach; ?>
                             </span>
                             <?php if (!empty($req['requested_within'])): ?>
-                                <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                                <span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
                                     <?= e($req['requested_within']) ?>
                                 </span>
                             <?php endif; ?>

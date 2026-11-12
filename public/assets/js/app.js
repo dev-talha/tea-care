@@ -286,6 +286,30 @@
     let lastFp = null;
     let lastUrgentCnt = null;
     let syncing = false;
+    let pollTimer = null;
+    let unchangedCount = 0;
+    let errorCount = 0;
+    const BASE_POLL_MS = isStaffLive ? 8000 : 15000;
+    const MAX_IDLE_MS = isStaffLive ? 20000 : 30000;
+
+    const getNextPollDelay = () => {
+      if (errorCount > 0) {
+        return Math.min(30000, BASE_POLL_MS * Math.pow(2, Math.min(errorCount, 3)));
+      }
+      if (unchangedCount >= 3) {
+        return Math.min(MAX_IDLE_MS, BASE_POLL_MS + (unchangedCount - 2) * 3000);
+      }
+      return BASE_POLL_MS;
+    };
+
+    const scheduleNextPoll = () => {
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+      if (document.visibilityState === 'hidden' || !navigator.onLine) return;
+      pollTimer = setTimeout(() => runLivePoll(false), getNextPollDelay());
+    };
 
     const pingNewOrder = () => {
       try {
@@ -349,6 +373,7 @@
       if (syncing || !navigator.onLine) return;
       if (!forceRefresh && document.visibilityState === 'hidden') return;
       if (!forceRefresh && document.activeElement && document.activeElement.tagName === 'SELECT' && document.activeElement.closest('#staff-live-panel')) {
+        scheduleNextPoll();
         return;
       }
 
@@ -360,9 +385,16 @@
         const endpoint = isStaffLive ? '/staff/poll' : '/today/poll';
         const url = lastFp ? `${endpoint}?fp=${encodeURIComponent(lastFp)}` : endpoint;
         const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          errorCount++;
+          return;
+        }
         const data = await res.json();
-        if (!data.ok || !data.fingerprint) return;
+        if (!data.ok || !data.fingerprint) {
+          errorCount++;
+          return;
+        }
+        errorCount = 0;
 
         if (isStaffLive) {
           if (typeof data.urgent === 'number') {
@@ -380,13 +412,19 @@
 
         if (!forceRefresh && data.changed && data.fingerprint !== lastFp) {
           lastFp = data.fingerprint;
+          unchangedCount = 0;
           await syncHtmlFromCurrentUrl();
         } else if (forceRefresh) {
           lastFp = data.fingerprint;
+          unchangedCount = 0;
+        } else {
+          unchangedCount++;
         }
       } catch (e) {
+        errorCount++;
       } finally {
         syncing = false;
+        scheduleNextPoll();
       }
     };
 
@@ -429,9 +467,19 @@
     });
 
     runLivePoll(false);
-    setInterval(() => runLivePoll(false), 4000);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') runLivePoll(false);
+      if (document.visibilityState === 'visible') {
+        unchangedCount = 0;
+        runLivePoll(false);
+      } else if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+    });
+    window.addEventListener('online', () => {
+      unchangedCount = 0;
+      errorCount = 0;
+      runLivePoll(false);
     });
   }
 })();

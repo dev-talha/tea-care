@@ -296,7 +296,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                         <?php $renderCupThumb($cupUrl, (string)$sk['full_name'], (string)($sk['employee_id'] ?? ''), (string)$sk['department_name'], (string)$sk['room_name'], 'Skipped: ' . $sessionLabel); ?>
                         <div class="min-w-0 flex-1">
                             <div class="font-bold text-sm text-slate-800 truncate"><?= e($sk['full_name']) ?></div>
-                            <div class="text-xs text-slate-500 truncate flex items-center gap-1">
+                            <div class="hidden sm:flex text-xs text-slate-500 truncate items-center gap-1">
                                 <i class="ti ti-door text-slate-400 shrink-0"></i>
                                 <strong class="truncate"><?= e($sk['room_name']) ?></strong>
                                 <span>&bull;</span>
@@ -354,11 +354,11 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <?php if ($o['status'] === 'pending'): ?>
-                                            <span class="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-extrabold uppercase">New</span>
+                                            <span class="px-2 py-0.5 rounded-md bg-teal-600 text-white text-[10px] font-extrabold uppercase">New</span>
                                         <?php endif; ?>
                                         <span class="font-bold text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></span>
                                     </div>
-                                    <div class="text-xs text-slate-500 truncate flex items-center gap-1">
+                                    <div class="hidden sm:flex text-xs text-slate-500 truncate items-center gap-1">
                                         <i class="ti ti-map-pin text-slate-400 shrink-0"></i>
                                         <strong class="truncate"><?= e($o['room_name_snapshot']) ?></strong> &bull; <span class="truncate"><?= e($o['department_name_snapshot']) ?></span>
                                     </div>
@@ -417,7 +417,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                         Guest / Meeting &bull; <?= $totalCups ?> Cups
                                     </span>
                                     <?php if (!empty($o['requested_within'])): ?>
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
                                             <i class="ti ti-clock-bolt text-xs"></i><?= e($o['requested_within']) ?>
                                         </span>
                                     <?php endif; ?>
@@ -432,8 +432,11 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                     <?= !empty($o['guest_count']) ? ' (' . (int)$o['guest_count'] . ' guests)' : '' ?>
                                 </div>
                             </div>
-                            <div class="shrink-0">
+                            <div class="shrink-0 flex flex-col items-end gap-1">
                                 <?php $status = $o['status']; $estimatedMinutes = $o['estimated_minutes'] ?? null; require __DIR__ . '/../partials/status-badge.php'; ?>
+                                <span class="text-[11px] font-medium text-slate-500 inline-flex items-center gap-1">
+                                    <i class="ti ti-clock"></i><?= e(date('g:i A', strtotime($o['created_at']))) ?>
+                                </span>
                             </div>
                         </div>
 
@@ -536,7 +539,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                                 <?php $renderCupThumb($cupUrl, (string)$o['employee_name_snapshot'], (string)($o['employee_id_snapshot'] ?? ''), (string)($o['department_name_snapshot'] ?? ''), (string)$room['room_name'], $drinkSummary); ?>
                                 <div class="min-w-0 flex-1">
                                     <div class="font-bold text-sm text-slate-800 truncate"><?= e($o['employee_name_snapshot']) ?></div>
-                                    <div class="text-[11px] text-slate-400 truncate"><?= e($o['department_name_snapshot'] ?? '') ?></div>
+                                    <div class="hidden md:block text-[11px] text-slate-400 truncate"><?= e($o['department_name_snapshot'] ?? '') ?></div>
                                     <div class="text-xs font-semibold text-tea-700 flex items-center gap-1 flex-wrap">
                                         <i class="ti <?= $o['beverage'] === 'coffee' ? 'ti-coffee text-amberwarm-600' : 'ti-cup text-tea-700' ?> shrink-0"></i>
                                         <span><?= (int)$o['quantity'] ?>&times; <?= e(badge_beverage($o['beverage'])) ?> &bull; <?= e(badge_sugar($o['sugar'])) ?></span>
@@ -602,7 +605,7 @@ $renderOrderActions = static function (array $o, ?int $filterRoomId, ?int $filte
                             <?php endif; ?>
                             <div class="min-w-0 flex-1">
                                 <div class="font-bold text-sm text-slate-800 truncate">
-                                    <?= e($o['employee_name_snapshot']) ?> &bull; <?= e($o['room_name_snapshot']) ?>
+                                    <?= e($o['employee_name_snapshot']) ?><span class="hidden sm:inline"> &bull; <?= e($o['room_name_snapshot']) ?></span>
                                 </div>
                                 <div class="text-xs text-slate-600 break-words">
                                     <?= e($drinkSummary) ?>
